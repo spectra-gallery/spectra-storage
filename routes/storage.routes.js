@@ -1,0 +1,33 @@
+/* eslint-disable max-len */
+const {authJwt} = require('../middlewares');
+const uploadController = require('../controllers/fileUpload.controller');
+
+const multer = require('multer');
+const upload = multer({ dest: 'ressources/' });
+
+module.exports = function(app) {
+  app.use(function(req, res, next) {
+    res.header(
+        'Access-Control-Allow-Headers',
+        'x-access-token, Origin, Content-Type, Accept',
+    );
+    next();
+  });
+
+
+  // upload collection sketch data
+  app.post('/storage/serie/upload', [authJwt.verifyToken], uploadController.htmlUpload);
+
+  app.post('/storage/serie/generate', [authJwt.verifyToken], uploadController.htmlToImg);
+
+  app.post('/storage/inscription/upload', [authJwt.verifyToken], uploadController.inscriptionUpload);
+
+  app.post('/storage/inscription/generate', [authJwt.verifyToken], uploadController.previewToImg);
+
+  app.post('/storage/upload/img', [authJwt.verifyToken], uploadController.uploadMatterImg);
+
+  app.post('/storage/serie/upload/media', [authJwt.verifyToken], upload.single('file'), uploadController.s3Upload);
+
+  // uploadCollectionHtml
+  app.post('/storage/serie/uploadhtml', [authJwt.verifyToken], uploadController.collectionHtmlUpload);
+};
