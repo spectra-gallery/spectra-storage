@@ -201,9 +201,37 @@ const collectionHtmlUpload = async (req, res) => {
   });
 };
 
+const htmlToFile = async (req, res) => {
+  const content = req.body.htmlContent;
+  const slug = req.slug;
+
+  const timestamp = Date.now();
+
+  if (!fs.existsSync(`./ressources/storage/serie/${slug}`)) {
+    fs.mkdirSync(`./ressources/storage/serie/${slug}`);
+  }
+
+  fs.writeFileSync(`./ressources/storage/serie/${slug}/${timestamp}-spectra-${slug}.html`,
+      content);
+
+  const serieUrl = `/storage/serie/${slug}/${timestamp}-spectra-${slug}.html`;
+
+  const fileSize = fs.statSync(`./ressources/storage/serie/${slug}/${timestamp}-spectra-${slug}.html`)
+      .size;
+
+  res.status(200).send({
+    serieUrl: serieUrl,
+    fileSize: fileSize,
+  });
+};
+
 
 const htmlToImg = async (req, res) => {
   await generateImg.generateImg(req, res);
+};
+
+const htmlToImgEth = async (req, res) => {
+  await generateImg.generateImgEth(req, res);
 };
 
 const previewToImg = async (req, res) => {
@@ -221,6 +249,8 @@ module.exports = {
   inscriptionUpload,
   collectionHtmlUpload,
   htmlToImg,
+  htmlToImgEth,
+  htmlToFile,
   previewToImg,
   s3Upload,
 };
