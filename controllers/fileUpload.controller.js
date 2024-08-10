@@ -173,6 +173,57 @@ const inscriptionUpload = async (req, res) => {
   }*/
 };
 
+const printUpload = async (req, res) => {
+  const content = req.body.content;
+  const tokenId = req.body.id;
+
+  /*
+  if (!fs.existsSync(`./ressources/storage/inscription/${req.userId}`)) {
+    fs.mkdirSync(`./ressources/storage/inscription/${req.userId}`);
+  }
+  */
+
+  if (!fs.existsSync(`./ressources/storage/print/${tokenId}`)) {
+    fs.mkdirSync(`./ressources/storage/print/${tokenId}`);
+  }
+
+  fs.writeFileSync(`./ressources/storage/print/${tokenId}/index.html`,
+      content);
+
+
+
+  const contentUrl =
+  '/storage/print/' +
+  tokenId + '/' + 'index.html';
+
+  res.status(200).send({
+    contentUrl: contentUrl,
+  });
+
+  /*
+  try {
+    await inscUpload(req, res);
+
+    if (req.file === undefined) {
+      return res.status(400).send({message: 'upload a file'});
+    }
+    const filePath = directoryPath + req.file.filename;
+
+    res.status(200).send({
+      fileUrl: filePath,
+    });
+  } catch (err) {
+    if (err.code == 'LIMIT_FILE_SIZE') {
+      return res.status(500).send({
+        message: 'File too large',
+      });
+    }
+    res.status(500).send({
+      message: `Could not upload the file: ${req.file.originalname}. ${err}`,
+    });
+  }*/
+};
+
 const collectionHtmlUpload = async (req, res) => {
   const content = req.body.content;
   const filename = req.body.filename;
@@ -201,9 +252,37 @@ const collectionHtmlUpload = async (req, res) => {
   });
 };
 
+const htmlToFile = async (req, res) => {
+  const content = req.body.htmlContent;
+  const slug = req.slug;
+
+  const timestamp = Date.now();
+
+  if (!fs.existsSync(`./ressources/storage/serie/${slug}`)) {
+    fs.mkdirSync(`./ressources/storage/serie/${slug}`);
+  }
+
+  fs.writeFileSync(`./ressources/storage/serie/${slug}/${timestamp}-spectra-${slug}.html`,
+      content);
+
+  const serieUrl = `/storage/serie/${slug}/${timestamp}-spectra-${slug}.html`;
+
+  const fileSize = fs.statSync(`./ressources/storage/serie/${slug}/${timestamp}-spectra-${slug}.html`)
+      .size;
+
+  res.status(200).send({
+    serieUrl: serieUrl,
+    fileSize: fileSize,
+  });
+};
+
 
 const htmlToImg = async (req, res) => {
   await generateImg.generateImg(req, res);
+};
+
+const htmlToImgEth = async (req, res) => {
+  await generateImg.generateImgEth(req, res);
 };
 
 const previewToImg = async (req, res) => {
@@ -219,8 +298,11 @@ module.exports = {
   uploadMatterImg,
   htmlUpload,
   inscriptionUpload,
+  printUpload,
   collectionHtmlUpload,
   htmlToImg,
+  htmlToImgEth,
+  htmlToFile,
   previewToImg,
   s3Upload,
 };
