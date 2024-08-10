@@ -27,6 +27,8 @@ module.exports = function(app) {
 
   app.post('/storage/inscription/upload', [authJwt.verifyToken], uploadController.inscriptionUpload);
 
+  app.post('/storage/print/upload', [authJwt.verifyToken], uploadController.printUpload);
+
   app.post('/storage/inscription/generate', [authJwt.verifyToken], uploadController.previewToImg);
 
   app.post('/storage/upload/img', [authJwt.verifyToken], uploadController.uploadMatterImg);
