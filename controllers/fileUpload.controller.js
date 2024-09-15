@@ -79,7 +79,7 @@ const s3Upload = async (req, res) => {
 const htmlUpload = async (req, res) => {
   // const userId = req.userId;
   const slug = req.slug;
-  const directoryPath = '/storage/serie/' + slug + '/';
+  const directoryPath = '/storage/spectre/' + slug + '/';
 
   /*
   if (!fs.existsSync(`./ressources/storage/collection/${userId}`)) {
@@ -87,8 +87,8 @@ const htmlUpload = async (req, res) => {
   }
   */
 
-  if (!fs.existsSync(`./ressources/storage/serie/${slug}`)) {
-    fs.mkdirSync(`./ressources/storage/serie/${slug}`);
+  if (!fs.existsSync(`./ressources/storage/spectre/${slug}`)) {
+    fs.mkdirSync(`./ressources/storage/spectre/${slug}`);
   }
 
 
@@ -99,12 +99,11 @@ const htmlUpload = async (req, res) => {
       return res.status(400).send({message: 'upload a file'});
     }
 
-    const htmlContent = fs.readFileSync(req.file.path, 'utf8');
+    // const htmlContent = fs.readFileSync(req.file.path, 'utf8');
 
     const filePath = directoryPath + req.file.filename;
     console.log(filePath);
     res.status(200).send({
-      htmlContent: htmlContent,
       fileUrl: filePath,
     });
   } catch (err) {
