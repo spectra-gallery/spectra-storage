@@ -1,21 +1,21 @@
 /* eslint-disable max-len */
-const uploadFile = require('../middlewares/upload');
-const uploadHtml = require('../middlewares/uploadHtml');
-const generateImg = require('../middlewares/generateImg');
-const generatePreview = require('../middlewares/generatePreview');
+const uploadFile = require("../middlewares/upload");
+const mUpload = require("../middlewares/multipleUpload");
+const uploadHtml = require("../middlewares/uploadHtml");
+const generateImg = require("../middlewares/generateImg");
+const generatePreview = require("../middlewares/generatePreview");
 const awsUpload = require("../middlewares/awsUpload");
-const fs = require('fs');
-const sharp = require('sharp');
+const fs = require("fs");
+const sharp = require("sharp");
 
-
-require('dotenv').config();
+require("dotenv").config();
 
 const USER_STORAGE = process.env.USER_STORAGE;
 const UPLOAD_PATH = process.env.UPLOAD_PATH;
 const RESIZE_TRESHOLD = parseInt(process.env.RESIZE_TRESHOLD);
 
 const uploadMatterImg = async (req, res) => {
-  const directoryPath = USER_STORAGE + req.userId + '/';
+  const directoryPath = USER_STORAGE + req.userId + "/";
 
   if (!fs.existsSync(`./ressources/storage/user/${req.userId}`)) {
     fs.mkdirSync(`./ressources/storage/user/${req.userId}`);
@@ -25,7 +25,7 @@ const uploadMatterImg = async (req, res) => {
     await uploadFile(req, res);
 
     if (req.file === undefined) {
-      return res.status(400).send({message: 'upload a file'});
+      return res.status(400).send({ message: "upload a file" });
     }
 
     let filePath = directoryPath + req.file.filename;
@@ -33,16 +33,22 @@ const uploadMatterImg = async (req, res) => {
     const twoMegabytesInBytes = RESIZE_TRESHOLD; // 2 MB in bytes
 
     if (fileSizeInBytes > twoMegabytesInBytes) {
-      const resizedImagePath = __basedir + UPLOAD_PATH +
-      'user/' + req.username + '/' + 'resize-' + req.file.filename;
+      const resizedImagePath =
+        __basedir +
+        UPLOAD_PATH +
+        "user/" +
+        req.username +
+        "/" +
+        "resize-" +
+        req.file.filename;
 
       // Resize the image using sharp
       await sharp(req.file.path)
-          .resize(600) // Resize to 800x800 pixels or any size you prefer
-          .toFile(resizedImagePath);
+        .resize(600) // Resize to 800x800 pixels or any size you prefer
+        .toFile(resizedImagePath);
 
       // Update the filePath to point to the resized image
-      filePath = directoryPath + 'resize-' + req.file.filename;
+      filePath = directoryPath + "resize-" + req.file.filename;
 
       // Delete the original file
       fs.unlinkSync(req.file.path, (err) => {
@@ -57,9 +63,9 @@ const uploadMatterImg = async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    if (err.code == 'LIMIT_FILE_SIZE') {
+    if (err.code == "LIMIT_FILE_SIZE") {
       return res.status(500).send({
-        message: 'File too large',
+        message: "File too large",
       });
     }
     res.status(500).send({
@@ -69,17 +75,15 @@ const uploadMatterImg = async (req, res) => {
 };
 
 const s3Upload = async (req, res) => {
-
-  const data = await awsUpload.uploadFile(req, res)
+  const data = await awsUpload.uploadFile(req, res);
 
   //res.status(200).send(data);
-
-}
+};
 
 const htmlUpload = async (req, res) => {
   // const userId = req.userId;
   const slug = req.slug;
-  const directoryPath = '/storage/serie/' + slug + '/';
+  const directoryPath = "/storage/spectre/" + slug + "/";
 
   /*
   if (!fs.existsSync(`./ressources/storage/collection/${userId}`)) {
@@ -87,30 +91,28 @@ const htmlUpload = async (req, res) => {
   }
   */
 
-  if (!fs.existsSync(`./ressources/storage/serie/${slug}`)) {
-    fs.mkdirSync(`./ressources/storage/serie/${slug}`);
+  if (!fs.existsSync(`./ressources/storage/spectre/${slug}`)) {
+    fs.mkdirSync(`./ressources/storage/spectre/${slug}`);
   }
-
 
   try {
     await uploadHtml(req, res);
 
     if (req.file === undefined) {
-      return res.status(400).send({message: 'upload a file'});
+      return res.status(400).send({ message: "upload a file" });
     }
 
-    const htmlContent = fs.readFileSync(req.file.path, 'utf8');
+    // const htmlContent = fs.readFileSync(req.file.path, 'utf8');
 
     const filePath = directoryPath + req.file.filename;
     console.log(filePath);
     res.status(200).send({
-      htmlContent: htmlContent,
       fileUrl: filePath,
     });
   } catch (err) {
-    if (err.code == 'LIMIT_FILE_SIZE') {
+    if (err.code == "LIMIT_FILE_SIZE") {
       return res.status(500).send({
-        message: 'File too large',
+        message: "File too large",
       });
     }
     res.status(500).send({
@@ -133,16 +135,11 @@ const inscriptionUpload = async (req, res) => {
     fs.mkdirSync(`./ressources/storage/${tokenId}`);
   }
 
-  fs.writeFileSync(`./ressources/storage/${tokenId}/index.html`,
-      content);
+  fs.writeFileSync(`./ressources/storage/${tokenId}/index.html`, content);
 
-  const previewUrl =
-  '/storage/' +
-  tokenId + '/' + 'index.html';
+  const previewUrl = "/storage/" + tokenId + "/" + "index.html";
 
-  const contentUrl =
-  '/storage/' +
-  tokenId + '/' + 'index.html';
+  const contentUrl = "/storage/" + tokenId + "/" + "index.html";
 
   res.status(200).send({
     previewUrl: previewUrl,
@@ -187,14 +184,9 @@ const printUpload = async (req, res) => {
     fs.mkdirSync(`./ressources/storage/print/${tokenId}`);
   }
 
-  fs.writeFileSync(`./ressources/storage/print/${tokenId}/index.html`,
-      content);
+  fs.writeFileSync(`./ressources/storage/print/${tokenId}/index.html`, content);
 
-
-
-  const contentUrl =
-  '/storage/print/' +
-  tokenId + '/' + 'index.html';
+  const contentUrl = "/storage/print/" + tokenId + "/" + "index.html";
 
   res.status(200).send({
     contentUrl: contentUrl,
@@ -238,13 +230,16 @@ const collectionHtmlUpload = async (req, res) => {
     fs.mkdirSync(`./ressources/storage/serie/${req.slug}`);
   }
 
-  fs.writeFileSync(`./ressources/storage/serie/${req.slug}/${filename}`,
-      content);
+  fs.writeFileSync(
+    `./ressources/storage/serie/${req.slug}/${filename}`,
+    content
+  );
 
   const collectionUrl = `/storage/serie/${req.slug}/${filename}`;
 
-  const fileSize = fs.statSync(`./ressources/storage/serie/${req.slug}/${filename}`)
-      .size;
+  const fileSize = fs.statSync(
+    `./ressources/storage/serie/${req.slug}/${filename}`
+  ).size;
 
   res.status(200).send({
     collectionUrl: collectionUrl,
@@ -262,13 +257,16 @@ const htmlToFile = async (req, res) => {
     fs.mkdirSync(`./ressources/storage/serie/${slug}`);
   }
 
-  fs.writeFileSync(`./ressources/storage/serie/${slug}/${timestamp}-spectra-${slug}.html`,
-      content);
+  fs.writeFileSync(
+    `./ressources/storage/serie/${slug}/${timestamp}-spectra-${slug}.html`,
+    content
+  );
 
   const serieUrl = `/storage/serie/${slug}/${timestamp}-spectra-${slug}.html`;
 
-  const fileSize = fs.statSync(`./ressources/storage/serie/${slug}/${timestamp}-spectra-${slug}.html`)
-      .size;
+  const fileSize = fs.statSync(
+    `./ressources/storage/serie/${slug}/${timestamp}-spectra-${slug}.html`
+  ).size;
 
   res.status(200).send({
     serieUrl: serieUrl,
@@ -276,6 +274,45 @@ const htmlToFile = async (req, res) => {
   });
 };
 
+const multipleUpload = async (req, res) => {
+  const slug = req.slug;
+  const directoryPath = "/storage/portfolio/" + slug + "/";
+
+  /*
+  if (!fs.existsSync(`./ressources/storage/collection/${userId}`)) {
+    fs.mkdirSync(`./ressources/storage/collection/${userId}`);
+  }
+  */
+
+  if (!fs.existsSync(`./ressources/storage/portfolio/${slug}`)) {
+    fs.mkdirSync(`./ressources/storage/portfolio/${slug}`);
+  }
+
+  try {
+    await mUpload(req, res);
+    console.log(req.files);
+    const filenames = [];
+
+    req.files.forEach((file) => {
+      filenames.push(directoryPath + file.filename);
+    });
+
+    if (req.files.length <= 0) {
+      return res.send(`You must select at least 1 file.`);
+    }
+
+    return res.send({
+      medias: filenames,
+    });
+  } catch (error) {
+    console.log(error);
+
+    if (error.code === "LIMIT_UNEXPECTED_FILE") {
+      return res.send(error.code);
+    }
+    return res.send(`Error when trying upload many files: ${error}`);
+  }
+};
 
 const htmlToImg = async (req, res) => {
   await generateImg.generateImg(req, res);
@@ -286,8 +323,7 @@ const htmlToImgEth = async (req, res) => {
 };
 
 const previewToImg = async (req, res) => {
-  const imgUrl = await generatePreview
-      .generatePreview(req, res);
+  const imgUrl = await generatePreview.generatePreview(req, res);
 
   res.status(200).send({
     imgUrl: imgUrl,
@@ -305,4 +341,5 @@ module.exports = {
   htmlToFile,
   previewToImg,
   s3Upload,
+  multipleUpload
 };

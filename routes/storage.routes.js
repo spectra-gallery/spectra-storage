@@ -35,6 +35,8 @@ module.exports = function(app) {
 
   app.post('/storage/serie/upload/media', [authJwt.verifyToken], upload.single('file'), uploadController.s3Upload);
 
+  app.post("/storage/portfolio/upload/media", [authJwt.verifyToken], uploadController.multipleUpload);
+
   // uploadCollectionHtml
   app.post('/storage/serie/uploadhtml', [authJwt.verifyToken], uploadController.collectionHtmlUpload);
 };

@@ -12,7 +12,7 @@ const storage = multer.diskStorage({
     const newName = file.originalname.replace(/\s/g, '');
     console.log(newName);
 
-    const filename = `${Date.now()}-function-${newName}`;
+    const filename = `${Date.now()}-spectra-${newName}`;
     cb(null, filename);
   },
 });
