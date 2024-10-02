@@ -7,7 +7,7 @@ const MAX_SIZE = parseInt(process.env.UPLOAD_HTML_MAX_SIZE);
 // html storage
 const htmlStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, __basedir + '/ressources/storage/spectre/' +
+    cb(null, __basedir + '/ressources/storage/serie/' +
     req.slug + '/');
   },
   filename: (req, file, cb) => {
@@ -23,18 +23,12 @@ const htmlStorage = multer.diskStorage({
 
 // html file filter
 const htmlFilter = (req, file, cb) => {
-  if (file.mimetype == 'image/png' ||
-    file.mimetype == 'image/jpg' ||
-    file.mimetype == 'image/jpeg' ||
-    file.mimetype == 'image/gif' ||
-    file.mimetype == 'image/webp' ||
-    file.mimetype == 'image/svg' ||
-    file.mimetype == 'video/mp4') {
-      cb(null, true);
-    } else {
-      cb(null, false);
-      return cb(new Error('Image allowed .jpeg, .jpg, .png, .gif'));
-    }
+  if (file.mimetype == 'text/html') {
+    cb(null, true);
+  } else {
+    cb(null, false);
+    return cb(new Error('Html file allowed'));
+  }
 };
 
 

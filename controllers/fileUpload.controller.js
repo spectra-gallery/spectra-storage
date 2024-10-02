@@ -2,6 +2,7 @@
 const uploadFile = require("../middlewares/upload");
 const mUpload = require("../middlewares/multipleUpload");
 const uploadHtml = require("../middlewares/uploadHtml");
+const uploadMedia = require("../middlewares/uploadMedia");
 const generateImg = require("../middlewares/generateImg");
 const generatePreview = require("../middlewares/generatePreview");
 const awsUpload = require("../middlewares/awsUpload");
@@ -83,6 +84,48 @@ const s3Upload = async (req, res) => {
 const htmlUpload = async (req, res) => {
   // const userId = req.userId;
   const slug = req.slug;
+  const directoryPath = "/storage/serie/" + slug + "/";
+
+  /*
+  if (!fs.existsSync(`./ressources/storage/collection/${userId}`)) {
+    fs.mkdirSync(`./ressources/storage/collection/${userId}`);
+  }
+  */
+
+  if (!fs.existsSync(`./ressources/storage/serie/${slug}`)) {
+    fs.mkdirSync(`./ressources/storage/serie/${slug}`);
+  }
+
+  try {
+    await uploadHtml(req, res);
+
+    if (req.file === undefined) {
+      return res.status(400).send({ message: "upload a file" });
+    }
+
+    const htmlContent = fs.readFileSync(req.file.path, 'utf8');
+
+    const filePath = directoryPath + req.file.filename;
+    console.log(filePath);
+    res.status(200).send({
+      htmlContent: htmlContent,
+      fileUrl: filePath,
+    });
+  } catch (err) {
+    if (err.code == "LIMIT_FILE_SIZE") {
+      return res.status(500).send({
+        message: "File too large",
+      });
+    }
+    res.status(500).send({
+      message: `Could not upload the file: ${req.file.originalname}. ${err}`,
+    });
+  }
+};
+
+const spectreUpload = async (req, res) => {
+  // const userId = req.userId;
+  const slug = req.slug;
   const directoryPath = "/storage/spectre/" + slug + "/";
 
   /*
@@ -96,7 +139,7 @@ const htmlUpload = async (req, res) => {
   }
 
   try {
-    await uploadHtml(req, res);
+    await uploadMedia(req, res);
 
     if (req.file === undefined) {
       return res.status(400).send({ message: "upload a file" });
@@ -341,5 +384,6 @@ module.exports = {
   htmlToFile,
   previewToImg,
   s3Upload,
-  multipleUpload
+  multipleUpload,
+  spectreUpload
 };

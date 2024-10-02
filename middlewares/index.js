@@ -1,6 +1,7 @@
 const authJwt = require('./authJwt');
 const uploadFileMiddleware = require('./upload');
 const multipleUpload = require('./multipleUpload');
+const uploadMedia = require('./uploadMedia');
 const generateImg = require('./generateImg');
 const generatePreview = require('./generatePreview');
 const awsUpload = require("./awsUpload");
@@ -12,5 +13,6 @@ module.exports = {
   generateImg,
   generatePreview,
   awsUpload,
-  multipleUpload
+  multipleUpload,
+  uploadMedia,
 };
