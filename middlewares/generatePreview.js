@@ -128,6 +128,93 @@ generatePreview = async (req, res) => {
   }
 };
 
+generateETHPreview = async (req, res) => {
+  // parse the formData with multer to get the file
+  // const urlDoc = BASE_URL + req.body.url;
+  // remove last character of Base URL
+  const sourceDoc = req.body.htmlContent;
+  const captureDelay = req.body.delay;
+  const cssSelector = req.body.cssSelector;
+  const userId = req.userId;
+  const slug = req.slug;
+  const hash = req.body.hash;
+
+
+  let htmlContent;
+  const hashFunction = `let injectSeed = "${hash}";`
+  htmlContent = sourceDoc.replace('___FIDDLER__HASH___', hashFunction)
+
+
+  htmlToPng(htmlContent, captureDelay, cssSelector, userId, slug, hash)
+      .then((imageBuffer) => {
+        if (!fs.existsSync(`./ressources/storage/nft/${userId}`)) {
+          fs.mkdirSync(`./ressources/storage/nft/${userId}`);
+        }
+
+        if (!fs.existsSync(`./ressources/storage/nft/${userId}/${slug}`)) {
+          fs.mkdirSync(`./ressources/storage/nft/${userId}/${slug}`);
+        }
+
+        const name = Date.now();
+        fs.writeFileSync(`./ressources/storage/nft/${userId}/${slug}/img-${name}.png`,
+            imageBuffer);
+
+        // conver imageBuffer to base64 string
+        // const base64Image = imageBuffer.toString('base64');
+
+        // send base64 string to client
+        // res.status(200).send(base64Image);
+
+
+        res.status(200).send({
+          imgUrl: `/storage/nft/${userId}/${slug}/img-${name}.png`
+        });
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+};
+
+async function htmlToPng(htmlContent, delayTime=5000, cssSelector='body', userId, slug, hash) {
+  const browser = await puppeteer.launch({headless: 'new'});
+  const page = await browser.newPage();
+
+  await page.setViewport({
+    width: 800,
+    height: 800,
+    deviceScaleFactor: 1,
+  });
+
+  await page.setContent(htmlContent);
+
+  let imageBuffer;
+
+  if (cssSelector === 'body') {
+    await delay(delayTime);
+    imageBuffer = await page.screenshot({
+      type: 'png',
+    });
+  } else {
+    const example = await page.$(cssSelector) ||
+  await page.$('canvas') ||
+  await page.$('svg') ||
+  await page.$('.container') ||
+  await page.$('body');
+    const boundingBox = await example.boundingBox();
+
+    await delay(delayTime);
+    imageBuffer = await page.screenshot({type: 'png',
+      clip: {
+        x: boundingBox.x,
+        y: boundingBox.y,
+        width: Math.min(boundingBox.width, page.viewport().width),
+        height: Math.min(boundingBox.height, page.viewport().height),
+      }});
+  }
+  await browser.close();
+  return imageBuffer;
+}
+
 /**
  * Delays execution for a specified number of milliseconds.
  *
@@ -142,4 +229,5 @@ function delay(time) {
 
 module.exports = {
   generatePreview,
+  generateETHPreview
 };
