@@ -5,7 +5,7 @@ const uploadHtml = require("../middlewares/uploadHtml");
 const uploadMedia = require("../middlewares/uploadMedia");
 const generateImg = require("../middlewares/generateImg");
 const generatePreview = require("../middlewares/generatePreview");
-const awsUpload = require("../middlewares/awsUpload");
+const uploadIPFS = require("../middlewares/ipfsUpload");
 const fs = require("fs");
 const sharp = require("sharp");
 
@@ -75,10 +75,19 @@ const uploadMatterImg = async (req, res) => {
   }
 };
 
-const s3Upload = async (req, res) => {
-  const data = await awsUpload.uploadFile(req, res);
+const ipfsUpload = async (req, res) => {
+  const file = req.file;
+    const fileName = req.file.originalname;
+    const timestamp = Date.now();
 
-  //res.status(200).send(data);
+    // get file path from file object
+    const filePath = file.path;
+
+  const data = await uploadIPFS.uploadFileToIPFS(filePath);
+
+  res.status(200).send({
+    ipfsHash: data
+  });
 };
 
 const htmlUpload = async (req, res) => {
@@ -373,6 +382,11 @@ const previewToImg = async (req, res) => {
   });
 };
 
+const previewETHToImg = async (req, res) => {
+  await generatePreview.generateETHPreview(req, res);
+  
+};
+
 module.exports = {
   uploadMatterImg,
   htmlUpload,
@@ -383,7 +397,8 @@ module.exports = {
   htmlToImgEth,
   htmlToFile,
   previewToImg,
-  s3Upload,
+  previewETHToImg,
+  ipfsUpload,
   multipleUpload,
   spectreUpload
 };
