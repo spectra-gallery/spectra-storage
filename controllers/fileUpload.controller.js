@@ -2,6 +2,7 @@
 const uploadFile = require("../middlewares/upload");
 const mUpload = require("../middlewares/multipleUpload");
 const uploadHtml = require("../middlewares/uploadHtml");
+const uploadAudio = require("../middlewares/uploadAudio");
 const uploadMedia = require("../middlewares/uploadMedia");
 const generateImg = require("../middlewares/generateImg");
 const generatePreview = require("../middlewares/generatePreview");
@@ -118,6 +119,45 @@ const htmlUpload = async (req, res) => {
     console.log(filePath);
     res.status(200).send({
       htmlContent: htmlContent,
+      fileUrl: filePath,
+    });
+  } catch (err) {
+    if (err.code == "LIMIT_FILE_SIZE") {
+      return res.status(500).send({
+        message: "File too large",
+      });
+    }
+    res.status(500).send({
+      message: `Could not upload the file: ${req.file.originalname}. ${err}`,
+    });
+  }
+};
+
+const audioUpload = async (req, res) => {
+  // const userId = req.userId;
+  const slug = req.slug;
+  const directoryPath = "/storage/spectre/audio/" + slug + "/";
+  console.log(slug)
+  /*
+  if (!fs.existsSync(`./ressources/storage/collection/${userId}`)) {
+    fs.mkdirSync(`./ressources/storage/collection/${userId}`);
+  }
+  */
+
+  if (!fs.existsSync(`./ressources/storage/spectre/audio/${slug}`)) {
+    fs.mkdirSync(`./ressources/storage/spectre/audio/${slug}`);
+  }
+
+  try {
+    await uploadAudio(req, res);
+
+    if (req.file === undefined) {
+      return res.status(400).send({ message: "upload a file" });
+    }
+
+    const filePath = directoryPath + req.file.filename;
+    console.log(filePath);
+    res.status(200).send({
       fileUrl: filePath,
     });
   } catch (err) {
@@ -390,6 +430,7 @@ const previewETHToImg = async (req, res) => {
 module.exports = {
   uploadMatterImg,
   htmlUpload,
+  audioUpload,
   inscriptionUpload,
   printUpload,
   collectionHtmlUpload,

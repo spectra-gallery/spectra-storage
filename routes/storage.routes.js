@@ -40,6 +40,8 @@ module.exports = function(app) {
 
   app.post('/storage/spectre/upload', [authJwt.verifyToken], uploadController.spectreUpload);
 
+  app.post('/storage/spectre/audio/upload', [authJwt.verifyToken], uploadController.audioUpload);
+
   // uploadCollectionHtml
   app.post('/storage/serie/uploadhtml', [authJwt.verifyToken], uploadController.collectionHtmlUpload);
 };
