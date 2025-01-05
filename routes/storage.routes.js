@@ -36,6 +36,7 @@ module.exports = function(app) {
   app.post('/storage/upload/img', [authJwt.verifyToken], uploadController.uploadMatterImg);
 
   app.post('/storage/serie/upload/media', [authJwt.verifyToken], upload.single('file'), uploadController.ipfsUpload);
+  app.post('/storage/serie/upload/media/onchain', [authJwt.verifyToken], upload.single('file'), uploadController.uploadOnChain);
   app.post("/storage/portfolio/upload/media", [authJwt.verifyToken], uploadController.multipleUpload);
 
   app.post('/storage/spectre/upload', [authJwt.verifyToken], uploadController.spectreUpload);

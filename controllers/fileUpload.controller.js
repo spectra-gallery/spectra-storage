@@ -4,9 +4,10 @@ const mUpload = require("../middlewares/multipleUpload");
 const uploadHtml = require("../middlewares/uploadHtml");
 const uploadAudio = require("../middlewares/uploadAudio");
 const uploadMedia = require("../middlewares/uploadMedia");
+const uploadMediaOnChain = require("../middlewares/uploadMediaOnChain");
 const generateImg = require("../middlewares/generateImg");
 const generatePreview = require("../middlewares/generatePreview");
-const uploadIPFS = require("../middlewares/ipfsUpload");
+const fleekStorage = require("../middlewares/fleekStorage");
 const fs = require("fs");
 const sharp = require("sharp");
 
@@ -78,17 +79,61 @@ const uploadMatterImg = async (req, res) => {
 
 const ipfsUpload = async (req, res) => {
   const file = req.file;
-    const fileName = req.file.originalname;
-    const timestamp = Date.now();
+  const fileName = req.file.originalname;
 
     // get file path from file object
-    const filePath = file.path;
+  const filePath = file.path;
 
-  const data = await uploadIPFS.uploadFileToIPFS(filePath);
+  const mimeType = file.mimetype;
+
+  const data = await fleekStorage.uploadFile(fileName, filePath, mimeType);
+
+  const cid = data.pin.cid;
 
   res.status(200).send({
-    ipfsHash: data
+    ipfsHash: cid,
   });
+};
+
+const uploadOnChain = async (req, res) => {
+  // const userId = req.userId;
+  const slug = req.slug;
+  const directoryPath = "/storage/serie/" + slug + "/";
+
+  /*
+  if (!fs.existsSync(`./ressources/storage/collection/${userId}`)) {
+    fs.mkdirSync(`./ressources/storage/collection/${userId}`);
+  }
+  */
+
+  if (!fs.existsSync(`./ressources/storage/serie/${slug}`)) {
+    fs.mkdirSync(`./ressources/storage/serie/${slug}`);
+  }
+
+  try {
+    await uploadMediaOnChain(req, res);
+
+    if (req.file === undefined) {
+      return res.status(400).send({ message: "upload a file" });
+    }
+
+    // const htmlContent = fs.readFileSync(req.file.path, 'utf8');
+
+    const filePath = directoryPath + req.file.filename;
+    console.log(filePath);
+    res.status(200).send({
+      fileUrl: filePath,
+    });
+  } catch (err) {
+    if (err.code == "LIMIT_FILE_SIZE") {
+      return res.status(500).send({
+        message: "File too large",
+      });
+    }
+    res.status(500).send({
+      message: `Could not upload the file: ${req.file.originalname}. ${err}`,
+    });
+  }
 };
 
 const htmlUpload = async (req, res) => {
@@ -441,5 +486,6 @@ module.exports = {
   previewETHToImg,
   ipfsUpload,
   multipleUpload,
-  spectreUpload
+  spectreUpload,
+  uploadOnChain
 };

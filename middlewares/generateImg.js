@@ -3,6 +3,8 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 require('dotenv').config();
 
+const fleekStorage = require('./fleekStorage');
+
 const BASE_URL = process.env.BASE_URL;
 
 generateImg = async (req, res) => {
@@ -82,8 +84,21 @@ generateImgEth = async (req, res) => {
         // send base64 string to client
         // res.status(200).send(base64Image);
 
+        return {
+          name: name,
+          path: `./ressources/storage/serie/${userId}/${slug}/${name}.png`
+        }
 
-        res.status(200).send(`/storage/serie/${userId}/${slug}/${name}.png`);
+        // res.status(200).send(`/storage/serie/${userId}/${slug}/${name}.png`);
+      })
+      .then(({name, path}) => {
+        return fleekStorage.uploadFile(`${name}.png`, path, 'image/png')
+      })
+      .then((result) => {
+        
+        const cid = result.pin.cid;
+        
+        res.status(200).send(cid);
       })
       .catch((error) => {
         console.error(error);
