@@ -2,9 +2,10 @@ const authJwt = require('./authJwt');
 const uploadFileMiddleware = require('./upload');
 const multipleUpload = require('./multipleUpload');
 const uploadMedia = require('./uploadMedia');
+const uploadMediaOnChain = require('./uploadMediaOnChain');
 const generateImg = require('./generateImg');
 const generatePreview = require('./generatePreview');
-const awsUpload = require("./awsUpload");
+const fleekStorage = require("./fleekStorage");
 // const { multipleUpload } = require('../controllers/fileUpload.controller');
 
 module.exports = {
@@ -12,7 +13,8 @@ module.exports = {
   uploadFileMiddleware,
   generateImg,
   generatePreview,
-  awsUpload,
+  fleekStorage,
   multipleUpload,
   uploadMedia,
+  uploadMediaOnChain
 };
