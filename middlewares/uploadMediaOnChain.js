@@ -1,8 +1,12 @@
 const util = require('util');
 const multer = require('multer');
 
+const uploadConfig = require('../config/upload.config');
+
+const UPLOAD_MAX_SIZE = uploadConfig.UPLOAD_MAX_SIZE;
+
 require('dotenv').config();
-const MAX_SIZE = parseInt(process.env.UPLOAD_MAX_SIZE);
+const MAX_SIZE = parseInt(UPLOAD_MAX_SIZE);
 
 // html storage
 const mediaStorage = multer.diskStorage({

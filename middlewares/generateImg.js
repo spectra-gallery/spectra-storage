@@ -5,7 +5,10 @@ require('dotenv').config();
 
 const fleekStorage = require('./fleekStorage');
 
-const BASE_URL = process.env.BASE_URL;
+const { BASE_URL } = require('../config/app.cypher.config');
+const {SERIE_STORAGE} = require('../config/path.config');
+
+const { buildPublicDirectory, buildDirectory } = require('../helpers/path.helpers');
 
 generateImg = async (req, res) => {
   // parse the formData with multer to get the file
@@ -21,6 +24,11 @@ generateImg = async (req, res) => {
 
   urlToPng(urlDoc, captureDelay, cssSelector, userId, slug)
       .then((imageBuffer) => {
+
+        const directoryPublicPath = buildPublicDirectory(SERIE_STORAGE, userId + "/" + slug);
+        const directoryPath = buildDirectory(SERIE_STORAGE, userId + "/" + slug);
+
+        /*
         if (!fs.existsSync(`./ressources/storage/serie/${userId}`)) {
           fs.mkdirSync(`./ressources/storage/serie/${userId}`);
         }
@@ -28,9 +36,12 @@ generateImg = async (req, res) => {
         if (!fs.existsSync(`./ressources/storage/serie/${userId}/${slug}`)) {
           fs.mkdirSync(`./ressources/storage/serie/${userId}/${slug}`);
         }
+          */
 
         const name = Date.now();
-        fs.writeFileSync(`./ressources/storage/serie/${userId}/${slug}/${name}.png`,
+        const filePublicPath = `${directoryPublicPath}${name}.png`;
+        const filePath = `${directoryPath}${name}.png`;
+        fs.writeFileSync(filePublicPath,
             imageBuffer);
 
         // conver imageBuffer to base64 string
@@ -40,7 +51,7 @@ generateImg = async (req, res) => {
         // res.status(200).send(base64Image);
 
 
-        res.status(200).send(`/storage/serie/${userId}/${slug}/${name}.png`);
+        res.status(200).send(filePath);
       })
       .catch((error) => {
         console.error(error);
@@ -66,6 +77,11 @@ generateImgEth = async (req, res) => {
 
   htmlToPng(htmlContent, captureDelay, cssSelector, userId, slug, hash)
       .then((imageBuffer) => {
+
+        const directoryPublicPath = buildPublicDirectory(SERIE_STORAGE, userId + "/" + slug);
+        const directoryPath = buildDirectory(SERIE_STORAGE, userId + "/" + slug);
+
+        /*
         if (!fs.existsSync(`./ressources/storage/serie/${userId}`)) {
           fs.mkdirSync(`./ressources/storage/serie/${userId}`);
         }
@@ -73,9 +89,12 @@ generateImgEth = async (req, res) => {
         if (!fs.existsSync(`./ressources/storage/serie/${userId}/${slug}`)) {
           fs.mkdirSync(`./ressources/storage/serie/${userId}/${slug}`);
         }
+          */
 
         const name = Date.now();
-        fs.writeFileSync(`./ressources/storage/serie/${userId}/${slug}/${name}.png`,
+        const filePublicPath = `${directoryPublicPath}${name}.png`;
+        const filePath = `${directoryPath}${name}.png`;
+        fs.writeFileSync(filePublicPath,
             imageBuffer);
 
         // conver imageBuffer to base64 string
@@ -86,7 +105,7 @@ generateImgEth = async (req, res) => {
 
         return {
           name: name,
-          path: `./ressources/storage/serie/${userId}/${slug}/${name}.png`
+          path: filePublicPath
         }
 
         // res.status(200).send(`/storage/serie/${userId}/${slug}/${name}.png`);

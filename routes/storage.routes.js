@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-const {authJwt} = require('../middlewares');
+const {authJwt, authAPI } = require('../middlewares');
 const uploadController = require('../controllers/fileUpload.controller');
 
 const multer = require('multer');
@@ -14,6 +14,8 @@ module.exports = function(app) {
     next();
   });
 
+  // upload from API
+  // app.post('/storage/upload/api/data', [authAPI.verifySignature], /*upload.single('file'),*/ uploadController.apiUpload);
 
   // upload collection sketch data
   app.post('/storage/serie/upload', [authJwt.verifyToken], uploadController.htmlUpload);

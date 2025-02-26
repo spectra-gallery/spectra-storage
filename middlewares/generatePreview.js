@@ -3,7 +3,10 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 require('dotenv').config();
 
-const BASE_URL = process.env.BASE_URL;
+const {buildPublicDirectory, buildDirectory } = require('../helpers/path.helpers');
+
+const { BASE_URL } = require('../config/app.cypher.config');
+const { INSCRPITION_STORAGE, NFT_STORAGE } = require('../config/path.config');
 
 generatePreview = async (req, res) => {
   const previewUrl = req.body.previewUrl;
@@ -13,7 +16,7 @@ generatePreview = async (req, res) => {
 
   try {
     // const url = 'http://localhost:6001' + previewUrl + '?seed=' + hash;
-    const url = 'http://localhost:6001' + previewUrl;
+    const url = BASE_URL.slice(0, -1) + previewUrl;
 
     /**
  * Converts HTML content to a PNG image.
@@ -104,23 +107,29 @@ generatePreview = async (req, res) => {
 
     const name = Date.now();
 
+    const directoryPublicPath = buildPublicDirectory(INSCRPITION_STORAGE, req.userId);
+    const directoryPath = buildDirectory(INSCRPITION_STORAGE, req.userId);
+
+    /*
     if (!fs.existsSync(`./ressources/storage/inscription/${req.userId}`)) {
       fs.mkdirSync(`./ressources/storage/inscription/${req.userId}`);
     }
+      */
+    const filePublicPath = `${directoryPublicPath}img${name}.png`;
+    const filePath = `${directoryPath}img${name}.png`;
 
     // create a file from the image buffer
-    fs.writeFileSync(`./ressources/storage/inscription/${req.userId}/img${name}.png`,
+    fs.writeFileSync(filePublicPath,
         imageBuffer);
 
     /*
     const imgUrl =
     `${BASE_URL}storage/inscription/${req.userId}/img${name}.png`;
     */
-    const imgUrl =
-    `/storage/inscription/${req.userId}/img${name}.png`;
+
 
     // return the preview url to generatePreview function
-    return imgUrl;
+    return filePath;
   } catch (error) {
     console.error(error);
     // throw error;
@@ -147,6 +156,10 @@ generateETHPreview = async (req, res) => {
 
   htmlToPng(htmlContent, captureDelay, cssSelector, userId, slug, hash)
       .then((imageBuffer) => {
+
+        const directoryPublicPath = buildPublicDirectory(NFT_STORAGE, userId + "/" + slug);
+        const directoryPath = buildDirectory(NFT_STORAGE, userId + "/" + slug);
+        /*
         if (!fs.existsSync(`./ressources/storage/nft/${userId}`)) {
           fs.mkdirSync(`./ressources/storage/nft/${userId}`);
         }
@@ -154,9 +167,15 @@ generateETHPreview = async (req, res) => {
         if (!fs.existsSync(`./ressources/storage/nft/${userId}/${slug}`)) {
           fs.mkdirSync(`./ressources/storage/nft/${userId}/${slug}`);
         }
+          */
 
         const name = Date.now();
-        fs.writeFileSync(`./ressources/storage/nft/${userId}/${slug}/img-${name}.png`,
+        
+        const filePublicPath = `${directoryPublicPath}img-${name}.png`;
+        const filePath = `${directoryPath}img-${name}.png`;
+
+      
+        fs.writeFileSync(filePublicPath,
             imageBuffer);
 
         // conver imageBuffer to base64 string
@@ -167,7 +186,7 @@ generateETHPreview = async (req, res) => {
 
 
         res.status(200).send({
-          imgUrl: `/storage/nft/${userId}/${slug}/img-${name}.png`
+          imgUrl: filePath
         });
       })
       .catch((error) => {
