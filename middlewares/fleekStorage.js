@@ -3,9 +3,11 @@ const { FleekSdk, PersonalAccessTokenService } = require('@fleek-platform/sdk/no
 const fs = require('fs');
 const path = require('path');
 
+const ipfsConfig = require('../config/ipfs.config');
+
 const personalAccessTokenService = new PersonalAccessTokenService({
-  personalAccessToken: 'pat_kCWVMFxzfWs3Z63wyDmh',
-  projectId: 'cm1zy3dl40000v8kq1u5sp2bq', // Optional
+  personalAccessToken: ipfsConfig.PersonalAccessToken,
+  projectId: ipfsConfig.projectId
 });
 
 

@@ -1,6 +1,6 @@
 module.exports = {
   apps: [{
-    name: 'function-storage',
+    name: 'spectra-storage',
     exec_mode: 'cluster',
     instances: 0,
     script: './server.js',
