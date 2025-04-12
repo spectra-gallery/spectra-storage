@@ -44,6 +44,10 @@ typings/
 # Optional npm cache directory
 .npm
 
+## 
+keys/
+services/keys/
+
 # Optional eslint cache
 .eslintcache
 
