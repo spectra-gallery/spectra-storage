@@ -1,0 +1,2399 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <title>Diffusion</title>
+
+
+    <script type="text/javascript">
+
+        // Algorithm of differential growth
+
+        var canvas;
+        var ctx;
+
+        var audioContext;
+        var fmsynth;
+
+        var compressor;
+        var drone;
+        var stab;
+        var lead;
+        var pad;
+
+        var fft;
+
+        let world;
+        let nodes = [];
+        let paths = [];
+
+        let start = 0;
+        let speed = 5;
+
+
+        var width;
+        var height;
+        let w, h;
+        let wdt;
+
+        var scl = 10;
+        var cols, rows;
+
+        var mouseX = 0;
+        var mouseY = 0;
+
+
+        let color_palette;
+        let backg_index;
+
+
+
+        var palette = [
+            ["#40f2d0", "#999DFF", "#FF9751", "#545479", "#8EB49B", "#2F4858"],
+            ["#082880", "#FD765D", "#FFB753", "#00BABB", "#5E5A8B", "#B02F37"],
+            ["#7462f9", "#B5A6DC", "#68BAA6", "#EE1E2F", "#00098D", "#E0EEF0"],
+            ["#f4b53f", "#2F4858", "#FFEDCB", "#4B8178", "#4E2D21", "#C1554E"],
+            ["#1D1B33", "#2F4858", "#FFEDCB", "#4B8178", "#7197A8", "#362E37"],
+            ["#F4B53F", "#2F4858", "#FFEDCB", "#4B8178", "#C1554E", "#6A4C57"],
+            ["#453C4C", "#B3AA74", "#FFEDCB", "#9F9D8A", "#7A6154", "#204E5E"],
+            ["#4C4459", "#82B59D", "#FFEDCB", "#F3AB4E", "#A44440", "#204E5E"],
+            ["#203239", "#96977B", "#FFEDCB", "#DB986F", "#964744", "#2C3637"],
+            ["#344C5C", "#698DA0", "#BFB8A6", "#E8CFC1", "#D96D59", "#2B3967"],
+            ["#263A5B", "#61898D", "#B4C4C5", "#FAE3C0", "#7B4B5A", "#B3BC99"],
+            ["#7A8671", "#D2B27C", "#E4CC91", "#BB605A", "#7B4B5A", "#F0E9A9"],
+            ["#ffa943", "#2177f4", "#35fc93", "#f9cfd2", "#6eabf4", "#3714a1"],
+            ["#ce2d42", "#7462f9", "#f4b53f", "#123676", "#9c223d", "#e6c7b4"],
+            ["#06a0ba", "#6f3bff", "#f20a41", "#8777f7", "#4848c1", "#e6c7b4"],
+            ["#71f2ff", "#81fcca", "#f91cb0", "#0239c1", "#05bdc6", "#f7f1b4"],
+            ["#302D3B", "#DBF7BD", "#879369", "#9A5154", "#C3C590", "#CAA174"],
+            ["#25164D", "#BFD4BF", "#316C6F", "#494190", "#D3B74F", "#ECE5DE"],
+            ["#624565", "#9B9589", "#E49E81", "#DB6A60", "#FAB582", "#E3B69A"],
+            ["#594C98", "#372B33", "#FE0878", "#82D6DB", "#92D0AF", "#721F4C"],
+            ["#F0DEB4", "#A1A17A", "#5A8170", "#F4F3CC", "#4B8178", "#FFC7A1"],
+            ["#A42534", "#3F352F", "#B74C3B", "#D4AA71", "#DCCFB2", "#693239"],
+            ["#665B55", "#F5B488", "#B55053", "#8B2335", "#69837B", "#F0D2B1"],
+            ["#313D51", "#FBE8AA", "#EB917B", "#B15552", "#809488", "#337F83"],
+            ["#042882", "#81fcca", "#f91cb0", "#0239c1", "#8450d6", "#05bdc6"],
+            ["#304B61", "#281733", "#377F86", "#D1D1AE", "#DB6D6A", "#9AC7C3"],
+            ["#2F677E", "#B5B383", "#C35F4F", "#D2E1D9", "#7FD1AE", "#FAE7BF"],
+            ["#2A2B41", "#673939", "#377F86", "#E3D5AE", "#EFC375", "#281733"],
+            ["#FF7E42", "#2D2E3C", "#FFE1C8", "#4F9472", "#D1594D", "#384C7D"],
+            ["#FF7306", "#C7B18E", "#FFE3A4", "#7F4E4D", "#233072", "#6B97A8"],
+            ["#FF6705", "#ED9C7B", "#FFE1A2", "#7F4E4D", "#154150", "#BAC292"],
+            ["#f2c079", "#3c3c67", "#f7edcf", "#84a0a4", "#d22f2f", "#cfd5ed"],
+            ["#505978", "#8ab984", "#f7d8c6", "#7f655d", "#c6d8f7", "#78A39B"],
+            ["#2F3C3E", "#7CAB93", "#B6CDA9", "#F4F3CF", "#666460", "#C9A889"],
+            ["#C1554E", "#0C3E4D", "#076269", "#C5B65B", "#F7C862", "#22BB9B"],
+            ["#C1554E", "#477F82", "#22BB9B", "#DFD2A8", "#F7C862", "#63AC9C"],
+            ["#3E3649", "#6D7180", "#B0ACAD", "#DFD2A8", "#F7C862", "#A6BC99"],
+            ["#44E2D2", "#2365B8", "#645EBA", "#664785", "#F38073", "#2E93B7"],
+            ["#E7A564", "#AC966F", "#596358", "#234564", "#EB7952", "#F0BA81"],
+            ["#131C3B", "#2B3C61", "#4F77C9", "#8FC2DE", "#D2DCC0", "#265670"],
+            ["#D62A58", "#122959", "#4F77C9", "#8FC2DE", "#D2DCC0", "#466C88"],
+            ["#DFE3DB", "#99BEA5", "#51525F", "#6C6A36", "#3F4159", "#572D54"],
+            ["#066A74", "#352F51", "#601449", "#EC4E25", "#F7954A", "#792023"],
+            ["#131133", "#0A405E", "#EF4F56", "#68C3A0", "#F3EFCA", "#A5282F"],
+            ["#234357", "#33AFA6", "#8FE2AD", "#DBEFA9", "#EACF7B", "#408AA8"],
+            ["#FDFCF8", "#A2A295", "#5A5F5F", "#2C3D3C", "#252929", "#31576E"],
+            ["#2F2930", "#707485", "#99AABE", "#B6E6E8", "#FBF8F2", "#C4BEBE"],
+            ["#F4B53F", "#6A4C57", "#DBE3AA", "#6EC699", "#3C4549", "#A66648"],
+            ["#F4B53F", "#6A4C57", "#212D4E", "#274B64", "#628367", "#6B293C"],
+            ["#F4B53F", "#6A4C57", "#21B29F", "#406B77", "#333F5B", "#3A8EA2"],
+            ["#432D3A", "#42495F", "#6F7E67", "#C0B37A", "#E9C268", "#E0DEAB"],
+            ["#432D3A", "#42495F", "#368991", "#E5DAB6", "#EDAB58", "#ED7B4A"],
+            ["#F3E6CA", "#DCAF8A", "#A8AD75", "#40818B", "#32374A", "#96B7B7"],
+            ["#492E1B", "#732737", "#5D5969", "#8F8E71", "#E8D993", "#B25963"],
+            ["#25272C", "#FBEFBD", "#DCB26C", "#386B67", "#0D3844", "#497084"],
+            ["#25272C", "#FBEFBD", "#AEAA9D", "#497084", "#303E61", "#3770A2"],
+            ["#292127", "#9B464A", "#E0C985", "#2A979A", "#0D2F3C", "#ECEFDB"],
+            ["#F4B53F", "#2F4858", "#0FB3BC", "#D6E3BD", "#C1554E", "#6A4C57"],
+            ["#D4BE5B", "#A1D1B5", "#48ADB6", "#516C57", "#401D35", "#39447D"],
+            ["#401D35", "#9E4557", "#F16E54", "#F2D89D", "#C4BB86", "#F9AD69"],
+            ["#FEB613", "#DEE4D7", "#3EC2B2", "#356F8D", "#2E2A32", "#A5E1AC"],
+            ["#8F4756", "#E7D7C4", "#A9A1A5", "#7A909D", "#352E3F", "#BA8B80"],
+            ["#1A2739", "#223653", "#5C223D", "#CD253A", "#EA8353", "#15486B"],
+            ["#385F8D", "#223653", "#E3564C", "#CD253A", "#764468", "#E1BAA9"],
+            ["#BFE3D4", "#F1D499", "#6787A0", "#3E5277", "#341C33", "#9E667B"],
+            ["#495069", "#87AD9F", "#D4C8AC", "#B67465", "#4B1F33", "#F28443"],
+            ["#495069", "#528B8C", "#EBDCBE", "#F0B07D", "#BD5D60", "#82A2B9"],
+            ["#507386", "#78B4AE", "#F2E1B9", "#C78379", "#8A6946", "#2D2543"],
+        ];
+
+
+        var notes;
+
+        // list of all major notes with # and b
+        var _notes = [['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'],
+        ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']];
+
+        let flavours = ["major", "minor"];
+        let flavour;
+
+        var musicKeys = [['C', 'G', 'D', 'A', 'A#', 'E', 'B', 'F#', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F'], // Major
+        ['A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'Bb', 'F', 'C', 'G', 'D']]; // Minor
+
+        let fifths = [["C", "G", "D", "A", "E", "B", "F#", "Db", "Ab", "Eb", "Bb", "F"],
+        ["A", "E", "B", "F#", "C#", "G#", "D#", "Bb", "F", "C", "G", "D"]
+        ];
+        // generate complete scale from C2 to C7 with # and b
+        let scale = [];
+
+        const _degrees = [[0, 2, 4, 5],
+        [0, 2, 4, 6],
+        [0, 2, 4, 5],
+        [0, 2, 3, 5],
+        ]; // degrees in the scale to use for chords
+        const _chords = [["I", "III", "IV", "V"],
+        ["I", "III", "V", "VII"],
+        ["I", "IV", "V", "VI"],
+        ["IV", "III", "IV", "V"],
+
+        ]; // chords to use for each degree
+
+        var progressionIndex = 0;
+        var progression;
+        var degree;
+
+        let scale2
+        let chordArray = [];
+        let freqArray = [];
+        let droneArray = [];
+        let droneFreqArray = [];
+
+        let currentChord = 0;
+        let nextChord = 0;
+
+        let trigger = false;
+        let play = false;
+
+
+        function init() {
+
+            var body = document.querySelector('body');
+
+            canvas = document.createElement('canvas');
+            body.appendChild(canvas);
+
+
+            ctx = canvas.getContext('2d');
+
+            audioContext = new AudioContext();
+
+
+            w = window.innerWidth;
+
+            h = window.innerHeight;
+
+
+
+
+            const pixelRatio = window.devicePixelRatio;
+
+
+            canvas.width = (w * pixelRatio) | 0;
+            canvas.height = (h * pixelRatio) | 0;
+
+
+            canvas.style.width = `${w}px`;
+            canvas.style.height = `${h}px`;
+
+
+            width = w;
+            height = h;
+
+
+            ctx.scale(pixelRatio, pixelRatio);
+
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.lineWidth = 1;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+
+            cols = (width / scl + 1) | 0;
+            rows = (height / scl + 1) | 0;
+
+            start = Date.now();
+
+
+            const palette_index = randomRange(0, palette.length) | 0;
+            color_palette = palette[palette_index];// palette[palette_index];
+            console.log(palette_index)
+            backg_index = randomRange(0, color_palette.length) | 0;
+
+
+            // 1, 0.3, 0.001, 0.01
+            let envelope = {
+                attack: 1.5,
+                decay: 0.1,
+                sustain: 0.01,
+                release: 0.03
+            };
+            // 0.001, 0.3, 0.01, 0.01
+            let modulationEnvelope = {
+                attack: 0.01,
+                decay: 0.3,
+                sustain: 0.002,
+                release: 0.01
+            };
+
+            // drone envelope
+            let droneEnvelope = {
+                attack: 1,
+                decay: 0.3,
+                sustain: 0.1,
+                release: 0.01
+            };
+
+            // drone modulation envelope
+            let droneModulationEnvelope = {
+                attack: 1.5,
+                decay: 0.3,
+                sustain: 0.1,
+                release: 0.01
+            };
+
+            let stabEnvelope = {
+                attack: 0.0002,
+                decay: 0.1,
+                sustain: 0.001,
+                release: 0.005,
+            };
+
+            let stabModulationEnvelope = {
+                attack: 0.0004,
+                decay: 0.1,
+                sustain: 0.001,
+                release: 0.01,
+            };
+
+            let leadEnvelope = {
+                attack: 0.5,
+                decay: 0.6,
+                sustain: 0.01,
+                release: 0.4,
+            };
+
+            let leadModulationEnvelope = {
+                attack: 0.02,
+                decay: 0.6,
+                sustain: 0.01,
+                release: 0.2,
+            };
+
+            let padEnvelope = {
+                attack: 0, // 0.001
+                decay: 0,
+                sustain: 0.1,
+                release: 0.3,
+            };
+
+            let padModulationEnvelope = {
+                attack: 0, // 0.002
+                decay: 0,
+                sustain: 0.1,
+                release: 0.6,
+            };
+
+
+            compressor = new Compressor(audioContext);
+
+
+            fmsynth = new FMSynth(audioContext, 5, envelope, modulationEnvelope, 0.01);
+            fmsynth.connect(compressor.input);
+
+            stab = new FMSynth(audioContext, 5, stabEnvelope, stabModulationEnvelope, 0.002);
+            stab.connect(compressor.input);
+
+            lead = new FMSynth(audioContext, 5, leadEnvelope, leadModulationEnvelope, 0.002);
+            lead.connect(compressor.input);
+
+
+            drone = new DroneSynth(audioContext, 5, droneEnvelope, droneModulationEnvelope, 0.01);
+            drone.connect(compressor.input);
+
+            pad = new PadSynth(audioContext, 5, padEnvelope, padModulationEnvelope, 0.02);
+            pad.connect(compressor.input);
+
+            fft = new FFT(audioContext);
+            compressor.connect(fft.analyser);
+            compressor.connect(audioContext.destination);
+
+
+            let index3 = mapRange(mathRand(), 0, 1, 0, flavours.length) | 0;
+            flavour = flavours[index3];
+            let keyIndex = mapRange(mathRand(), 0, 1, 0, fifths[index3].length) | 0;
+            let key = fifths[index3][keyIndex];
+            let keySignature = getKeySignature(key);
+            let scaleIndex = getKeyListIndex(keySignature);
+            notes = _notes[scaleIndex];
+            console.log(flavour);
+            console.log(notes)
+            let note = key + "2";
+
+            console.log(note)
+            let scale2 = generateScale2(note, flavour);
+
+            console.log("scale2", scale2)
+            progressionIndex = mathRand() * _degrees.length | 0;
+            degree = _degrees[progressionIndex];
+            progression = _chords[progressionIndex];
+            console.log(degree, progression);
+            let fifths_progression = generateProgression(scale2, index3);
+            console.log(fifths_progression)
+
+            fifths_progression.forEach((note, index) => {
+                let chord = generateChord(note);
+                chordArray.push(chord);
+
+            });
+            console.log(chordArray)
+
+            droneArray = decreaseOctave(chordArray);
+
+            chordArray.forEach((chord, index) => {
+                let freq = [];
+                chord.forEach((note, index) => {
+                    let freq2 = noteToFrequency(note);
+                    freq.push(freq2);
+                });
+                freqArray.push(freq);
+            });
+
+            droneArray.forEach((chord, index) => {
+                let freq = [];
+                chord.forEach((note, index) => {
+                    let freq2 = noteToFrequency(note);
+                    freq.push(freq2);
+                });
+                droneFreqArray.push(freq);
+            });
+
+            world = new World();
+
+
+            for (let j = 0; j < 1; j++) {
+                let path = new Path();
+                // let x = randomRange(-width / 2 + 40, width / 2 - 40);
+                //let y = randomRange(-height / 2 + 40, height / 2 - 40);
+                let x = randomRange(-width / 2 + 40, width / 2 - 40);
+                let y = randomRange(-height / 2 + 40, height / 2 - 40);
+                let nodeN = randomRange(7, 19) | 0;
+                for (let i = 0; i < 120; i++) {
+
+                    let theta = mapRange(i, 0, 120, 0, Math.PI * 2);
+                    let node = new Node(Math.cos(theta) * 30, Math.sin(theta) * 30);
+
+                    path.nodes.push(node);
+
+                    nodes.push(node);
+                }
+
+                paths.push(path);
+
+
+            }
+
+            world.paths.push(...paths);
+
+
+            for (let i = 0; i < paths.length; i++) {
+                let path = paths[i];
+                for (let j = 0; j < path.nodes.length; j++) {
+                    let node = path.nodes[j];
+                    // in node.neighbors add the node i-1 and i+1
+                    if (j === 0) {
+                        node.neighbors.push(path.nodes[path.nodes.length - 1]);
+                        path.nodes[path.nodes.length - 1].neighbors.push(node);
+                    } else if (j === path.nodes.length - 1) {
+                        node.neighbors.push(path.nodes[0]);
+                        path.nodes[0].neighbors.push(node);
+                    } else {
+                        node.neighbors.push(path.nodes[j - 1]);
+                        path.nodes[j - 1].neighbors.push(node);
+                        node.neighbors.push(path.nodes[j + 1]);
+                        path.nodes[j + 1].neighbors.push(node);
+                    }
+                }
+            }
+
+
+            window.$generativeTraits = {
+                "Type": "Audio",
+                "BPM": "60",
+                "Key": key,
+                "Flavour": flavour,
+                "Chords": progression,
+            };
+
+            canvas.addEventListener("keypress", capture, false);
+            canvas.addEventListener('click', audioPlay);
+            canvas.addEventListener('touchstart', audioPlay);
+
+            canvas.addEventListener('mousemove', mouseMove, false);
+            canvas.addEventListener('touchmove', touchMove), false;
+
+            ctx.clearRect(0, 0, width, height);
+
+            ctx.fillStyle = color_palette[backg_index];
+            // ctx.fillStyle = "#E3D5AE";
+            ctx.fillRect(0, 0, width, height);
+
+
+            window.requestAnimationFrame(anim);
+        }
+
+
+        function anim() {
+            window.requestAnimationFrame(anim);
+
+            
+
+
+            ctx.save();
+            
+            /*
+            world.polygons.forEach(polygon => {
+                polygon.draw();
+            });
+            */
+
+            ctx.translate(width / 2, height / 2);
+
+
+
+            for (let i = 0; i < paths.length; i++) {
+                paths[i].update();
+                paths[i].draw();
+
+                for (let j = 0; j < paths.length; j++) {
+                    if (i !== j) {
+                        // paths[i].repelPaths(paths[j]);
+                    }
+                }
+                // paths[i].clusterPaths();
+
+                if (mathRand() < 0.1) {
+                     paths[i].randomGrowth();
+                }
+
+                 paths[i].diffGrowth();
+
+            }
+
+            currentChord = nextChord;
+
+            if (trigger) {
+                fmsynth.start();
+                drone.start();
+                stab.start();
+                lead.start();
+                pad.start();
+
+                let interval = setInterval(() => {
+                    playChord();
+
+                    let ite = mathRand() * 3 | 0;
+                    let ite2 = mathRand() * 3 | 0;
+                    let ite3 = mathRand() * 3 | 0;
+                    let ite4 = mathRand() * 3 | 0;
+                    let ite5 = mathRand() * 3 | 0;
+                    let ite6 = mathRand() * 3 | 0;
+                    let delay = [3 / 4, 3 / 8, 3 / 16]
+                    fmsynth.delay.setDelayTime(delay[ite]);
+                    fmsynth.pingPongDelay.setDelayTime(delay[ite2]);
+                    stab.delay.setDelayTime(delay[ite3]);
+                    stab.pingPongDelay.setDelayTime(delay[ite2]);
+                    lead.delay.setDelayTime(delay[ite4]);
+                    lead.pingPongDelay.setDelayTime(delay[ite2]);
+                    pad.delay.setDelayTime(delay[ite5]);
+                    // pad.pingPongDelay.setDelayTime(delay[ite6]);
+
+                    let ite7 = mathRand() * 3 | 0;
+                    let ite8 = mathRand() * 3 | 0;
+                    let ite9 = mathRand() * 3 | 0;
+                    let ite10 = mathRand() * 3 | 0;
+
+                    let feedback = [0.6, 0.7, 0.8]
+
+                    fmsynth.delay.setFeedback(feedback[ite5]);
+                    fmsynth.pingPongDelay.setFeedback(feedback[ite6]);
+
+                    stab.delay.setFeedback(feedback[ite7]);
+                    stab.pingPongDelay.setFeedback(feedback[ite8]);
+
+                    lead.delay.setFeedback(feedback[ite9]);
+                    lead.pingPongDelay.setFeedback(feedback[ite10]);
+
+
+
+                }, 9100);
+
+                trigger = false;
+            }
+
+            function playChord() {
+                drone.triggerAttack(droneFreqArray[currentChord]);
+                fmsynth.triggerAttack(freqArray[currentChord]);
+
+                if (mathRand() < 0.27) {
+
+                    stab.triggerAttack(freqArray[currentChord]);
+                }
+                lead.triggerAttack(freqArray[currentChord]);
+                pad.triggerAttack(freqArray[currentChord]);
+
+
+                setTimeout(() => {
+                    // drone.triggerRelease();
+                    fmsynth.triggerRelease();
+
+                    nextChord = (currentChord + 1) % chordArray.length;
+                }, randomizeDelay(8300, 250));
+
+
+                setTimeout(() => {
+                    // drone.triggerRelease();
+
+                    stab.triggerRelease();
+                    lead.triggerRelease();
+
+                    nextChord = (currentChord + 1) % chordArray.length;
+                }, randomizeDelay(8300, 350));
+
+                setTimeout(() => {
+                    // drone.triggerRelease();
+                    pad.triggerRelease();
+                    nextChord = (currentChord + 1) % chordArray.length;
+                }, randomizeDelay(8300, 150));
+
+
+            }
+
+            ctx.restore();
+
+
+        }
+
+
+        class Vector {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+            }
+            add(v) {
+                return new Vector(this.x + v.x, this.y + v.y);
+            }
+            sub(v) {
+                return new Vector(this.x - v.x, this.y - v.y);
+            }
+            mult(s) {
+                return new Vector(this.x * s, this.y * s);
+            }
+            div(s) {
+                return new Vector(this.x / s, this.y / s);
+            }
+            mag() {
+                return Math.sqrt(this.x * this.x + this.y * this.y);
+            }
+            normalize() {
+                return this.div(this.mag());
+            }
+            limit(max) {
+                if (this.mag() > max) {
+                    return this.normalize().mult(max);
+                } else {
+                    return this;
+                }
+            }
+            dist(v) {
+                return this.sub(v).mag();
+            }
+            setMag(mag) {
+                return this.normalize().mult(mag);
+            }
+            heading() {
+                return Math.atan2(this.y, this.x);
+            }
+            rotate(angle) {
+                let newHeading = this.heading() + angle;
+                let mag = this.mag();
+                this.x = Math.cos(newHeading) * mag;
+                this.y = Math.sin(newHeading) * mag;
+                return this;
+            }
+            lerp(v, t) {
+                return this.add(v.sub(this).mult(t));
+            }
+            lerp2(v, t) {
+                return this.sub(v.sub(this).mult(t));
+            }
+            copy() {
+                return new Vector(this.x, this.y);
+            }
+            dot(v) {
+                return this.x * v.x + this.y * v.y;
+            }
+            static lerp(v0, v1, t) {
+                return v0.mult(1 - t).add(v1.mult(t));
+            }
+            static dot(v1, v2) {
+                return v1.x * v2.x + v1.y * v2.y;
+            }
+        }
+
+        class Node {
+            constructor(x, y) {
+                this.pos = new Vector(x, y);
+                this.iniPos = new Vector(x, y);
+                this.vel = new Vector(0, 0);
+                this.acc = new Vector(0, 0);
+                this.neighbors = [];
+                this.minDistance = 12;
+                this.attractionForce = 1.9;
+                this.repulsionForce = 0.16; // 0.01
+                this.attractionForce2 = 0.6;
+                this.repulsionForce2 = 0.9;
+                this.repulsionForce3 = 4.9;
+                this.attractionForce3 = 0.1; // iniPos force 0.01
+                this.attractionForce4 = 3.1;
+                this.repulsionForce4 = 9.9; // 10.9
+                this.attractionForce5 = 0.001; // 0.001
+                this.repulsionForce5 = 0.1; // 0.001
+                this.attractionForce6 = 0.012;
+                this.repulsionForce6 = 0.01;
+                this.p = false;
+
+                this.amplitude = 0;
+
+                this.r = randomRange(1, 4) | 0;
+                this.radius = this.r * 12;
+                this.colorP = color_palette[randomIndexOmit(color_palette, backg_index)];
+
+                this.init();
+            }
+            update() {
+                // Calculate the total force acting on the node
+                let totalForce = new Vector(0, 0);
+
+                // Calculate the attraction force from each neighbor
+                for (const neighbor of this.neighbors) {
+                    const distance = neighbor.pos.sub(this.pos).mag();
+                    const direction = neighbor.pos.sub(this.pos).normalize();
+                    const attraction = direction.mult(this.attractionForce * (distance - this.minDistance));
+                    totalForce = totalForce.add(attraction);
+                }
+
+                // Calculate the repulsion force from each neighbor
+                /*
+                for (const neighbor of this.neighbors) {
+                    const distance7 = neighbor.pos.sub(this.pos).mag();
+                    const direction7 = neighbor.pos.sub(this.pos).normalize();
+                    const repulsion7 = direction7.mult(-this.repulsionForce * 1 / (distance7 * distance7));
+                    totalForce = totalForce.add(repulsion7);
+                }
+                */
+
+                const distance4 = this.iniPos.sub(this.pos).mag();
+                if (distance4 > 0.1) {
+                    const direction4 = this.iniPos.sub(this.pos).normalize();
+                    let attraction4 = direction4.mult(this.attractionForce3 * distance4);
+                    totalForce = totalForce.add(attraction4);
+                }
+
+                // Sinusoidal force
+                const frequency = 10;
+                const time = millis() * 0.001;
+                this.applyAudioWaveForce();
+                this.applySinusoidalForce(new Vector(0, 0), this.amplitude, frequency, time);
+
+
+
+                totalForce = totalForce.add(this.acc);
+
+
+                for (const neighbor of this.knnSearch(this.radius)) {
+                    const distance3 = neighbor.pos.sub(this.pos).mag();
+                    const direction3 = neighbor.pos.sub(this.pos).normalize();
+                    const repulsion3 = direction3.mult(-this.repulsionForce2 * 1 / distance3 * distance3);
+                    totalForce = totalForce.add(repulsion3);
+                }
+
+                for (const other of nodes) {
+                    if (other === this) continue;
+                    const distance = other.pos.sub(this.pos).mag();
+
+                    const direction = other.pos.sub(this.pos).normalize();
+                    const repulsion = direction.mult(-this.repulsionForce * 1 / distance * distance);
+                    totalForce = totalForce.add(repulsion);
+
+
+
+                }
+
+                // alignement force
+
+                const midPoint = new Vector(0, 0);
+                for (const neighbor of this.neighbors) {
+                    midPoint.x += neighbor.pos.x;
+                    midPoint.y += neighbor.pos.y;
+                }
+                midPoint.x /= this.neighbors.length;
+                midPoint.y /= this.neighbors.length;
+                const direction = midPoint.sub(this.pos).normalize();
+                const alignment = direction.mult(this.attractionForce4 * (midPoint.sub(this.pos).mag() - this.minDistance));
+                totalForce = totalForce.add(alignment);
+
+
+                // curvature force
+
+                const curvatureForce = new Vector(0, 0);
+                for (let i = 0; i < this.neighbors.length; i++) {
+                    const neighbor = this.neighbors[i];
+                    const nextNeighbor = this.neighbors[(i + 1) % this.neighbors.length];
+                    const tangent = neighbor.pos.sub(this.pos).normalize();
+                    const nextTangent = nextNeighbor.pos.sub(this.pos).normalize();
+                    const curvature = tangent.add(nextTangent).normalize();
+                    curvatureForce.x += curvature.x;
+                    curvatureForce.y += curvature.y;
+                }
+                curvatureForce.x /= this.neighbors.length;
+                curvatureForce.y /= this.neighbors.length;
+
+                const curvatureCenter = this.pos.add(curvatureForce.mult(0.5));
+                const distance2 = curvatureCenter.sub(this.pos).mag();
+
+                const direction2 = curvatureCenter.sub(this.pos).normalize();
+                var attraction2 = direction2.mult(-this.repulsionForce3 * 1 / distance2 * distance2);
+
+                totalForce = totalForce.add(attraction2);
+
+                // repel nodes from the mouse
+                const mouse = new Vector(mouseX, mouseY);
+                const distance = mouse.sub(this.pos).mag();
+                if (distance < 100) {
+                    const direction = mouse.sub(this.pos).normalize();
+                    const repulsion = direction.mult(-this.repulsionForce4 * 1 / distance * distance);
+                    totalForce = totalForce.add(repulsion);
+                }
+
+
+
+                let posOffset = new Vector(this.pos.x + width / 2, this.pos.y + height / 2);
+                let i = posOffset.x / scl | 0;
+                let j = posOffset.y / scl | 0;
+                let index = i + j * cols;
+
+                let polygon = world.polygons[index];
+
+                if (polygon) {
+                    // if the node is within the polygon, an attraction force is applied to the node
+                    // to keep it inside the polygon
+
+                    if (polygon.spot) {
+                        
+                    
+                    const direction = polygon.center.sub(posOffset).normalize();
+                    const distance = polygon.center.sub(posOffset).mag();
+
+                    const attraction = direction.mult(this.attractionForce5 * distance);
+                    totalForce = totalForce.add(attraction);
+                    
+                        /*
+                    const distance = polygon.center.sub(posOffset).mag();
+                    const direction = polygon.center.sub(posOffset).normalize();
+                    const repulsion6 = direction.mult(-this.repulsionForce6 * 1 / distance * distance);
+                    totalForce = totalForce.add(repulsion6);
+                        */
+                    
+    
+                    }
+                    polygon.spot = true;
+
+
+                }
+
+
+                // attract nodes to the center of the canvas
+                /*
+                const center = new Vector(0, 0);
+                const distance5 = center.sub(this.pos).mag();
+                const direction5 = center.sub(this.pos).normalize();
+                const attraction5 = direction5.mult(this.attractionForce6 * distance5);
+                totalForce = totalForce.add(attraction5);
+                */
+
+
+                this.acc = totalForce.div(1);
+
+
+
+                // Update the pos and velocity of the node using the motion equations and integration
+                const dt = 0.1; // Time step
+                const damping = 0.5; // Damping factor
+
+                const velocity = this.vel.add(this.acc.mult(dt)).mult(1 - damping * dt);
+                this.pos = this.pos.add(velocity.mult(dt));
+                this.vel = velocity;
+                this.acc = new Vector(0, 0);
+            }
+
+            applySinusoidalForce(origin, amplitude, frequency, time) {
+                let force = new Vector(0, 0);
+                const direction = this.pos.sub(origin).normalize();
+                const distance = this.pos.sub(origin).mag();
+                const phase = frequency * time + distance * 0.05; // 0.05 is the phase shift
+                const sinusoidal = Math.sin(phase) * this.amplitude;
+
+
+                force.x = direction.x * sinusoidal;
+                force.y = direction.y * sinusoidal;
+
+
+
+                const perpendicular = new Vector(direction.y, -direction.x);
+                force.x += perpendicular.x;
+                force.y += perpendicular.y;
+
+
+                this.acc = this.acc.add(force);
+
+                /*
+                        if (this.amplitude < 10 && !this.p) {
+                            this.amplitude += 0.15;
+                        }
+                        if (this.amplitude > 0 && this.p) {
+                            this.amplitude -= 0.05;
+                        }
+                        if (this.amplitude >= 10) {
+                            this.p = true;
+                        }
+                        if (this.amplitude <= 0) {
+                            this.p = false;
+                        }
+                */
+            }
+
+            applyAudioWaveForce() {
+
+                const frequencyData = fft.getFrequencyData();
+
+                // get the average amplitude of the frequency data
+                let amp = 0;
+                for (let i = 0; i < frequencyData.length; i++) {
+                    amp += frequencyData[i];
+                }
+                amp /= frequencyData.length;
+
+                // map the amplitude to a value between 0 and 1
+                this.amplitude = mapRange(amp, 0, 255, 0, 1) * 420;
+
+                // if (amp !== 0) console.log(amp)
+
+
+                if (this.amplitude < 10 && !this.p) {
+                    this.amplitude += 0.15;
+                }
+                if (this.amplitude > 0 && this.p) {
+                    this.amplitude -= 0.05;
+                }
+                if (this.amplitude >= 10) {
+                    this.p = true;
+                }
+                if (this.amplitude <= 0) {
+                    this.p = false;
+                }
+
+            }
+
+
+
+            knnSearch(radius) {
+                let neighbors = [];
+                for (const node of nodes) {
+                    const distance = node.pos.sub(this.pos).mag();
+                    if (distance <= radius && node !== this) {
+                        neighbors.push(node);
+                    }
+                }
+                return neighbors;
+            }
+
+
+            move() {
+                if (0 <= this.t && this.t < this.t1) {
+                    let nrm = norm(this.t, 0, this.t1 - 1);
+                    this.attractionForce2 = lerp(0, 0.8, easeOutQuint(nrm));
+                    this.repulsionForce2 = lerp(0.1, 0.9, easeOutQuint(nrm));
+                    // this.amplitude = lerp(0, 0.1, easeOutQuint(nrm));
+
+                }
+                if (this.t1 < this.t) {
+                    this.init();
+                }
+                this.t++;
+            }
+
+            init() {
+                this.t = (-mathRand() * mapRange(speed, 1, 5, 5000, 1000)) | 0;
+                this.t1 = mapRange(speed, 1, 5, 2200, 600);
+            }
+
+            display() {
+                ctx.fillStyle = this.colorP;
+                ctx.beginPath();
+                ctx.arc(this.pos.x, this.pos.y, this.r * 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+        }
+
+        class Path {
+            constructor() {
+                this.nodes = [];
+                this.maxEdgeLength = 50;
+                this.minEdgeLength = 10;
+                this.attractionForce = 0.3;
+                this.repulsionForce = 10.6;
+                this.influenceRadius = 20;
+                this.maxForce = 6;
+                this.color = color_palette[randomIndexOmit(color_palette, backg_index)];
+            }
+            draw() {
+                
+                ctx.strokeStyle = "rgba(0, 0, 0, 0.01)";
+                ctx.beginPath();
+                ctx.moveTo(this.nodes[0].pos.x, this.nodes[0].pos.y);
+                for (let i = 1; i < this.nodes.length - 1; i++) {
+                    const xc = (this.nodes[i].pos.x + this.nodes[i + 1].pos.x) / 2;
+                    const yc = (this.nodes[i].pos.y + this.nodes[i + 1].pos.y) / 2;
+                    ctx.quadraticCurveTo(this.nodes[i].pos.x, this.nodes[i].pos.y, xc, yc);
+                }
+                // ctx.quadraticCurveTo(this.nodes[this.nodes.length - 2].pos.x, this.nodes[this.nodes.length - 2].pos.y, this.nodes[this.nodes.length - 1].pos.x, this.nodes[this.nodes.length - 1].pos.y);
+                ctx.quadraticCurveTo(this.nodes[this.nodes.length - 1].pos.x, this.nodes[this.nodes.length - 1].pos.y, this.nodes[0].pos.x, this.nodes[0].pos.y);
+        
+                ctx.stroke();
+                
+               /*
+
+                for (let i = 0; i < this.nodes.length; i++) {
+                    this.nodes[i].display();
+                }
+                */
+
+            }
+            update() {
+                for (let i = 0; i < this.nodes.length; i++) {
+                    this.nodes[i].update();
+                    this.nodes[i].move();
+                }
+
+            }
+
+            repelPaths(otherPath) {
+                let delta = otherPath.computeCenterOfMass().sub(this.computeCenterOfMass())
+                const d = delta.mag();
+                delta = delta.normalize();
+                if (d < this.diameter() / 2 + otherPath.diameter() / 2 + this.influenceRadius) {
+                    const force = delta.mult(-this.repulsionForce / d * d);
+                    for (const node of this.nodes) {
+                        // let steer = force.sub(node.vel);
+                        //  node.acc = node.acc.add(steer);
+                        for (const otherNodes of otherPath.nodes) {
+                            let delta2 = otherNodes.pos.sub(node.pos);
+                            const d2 = delta2.mag();
+                            delta2 = delta2.normalize();
+                            if (d2 < this.influenceRadius) {
+                                const force2 = delta2.mult(-this.repulsionForce / d2 * d2);
+                                let steer2 = force2.sub(node.vel);
+                                node.acc = node.acc.add(steer2);
+                            }
+                        }
+                    }
+                }
+
+
+            }
+            // cluster paths to the center of the canvas
+            clusterPaths() {
+                let center = new Vector(0, 0);
+                let delta = center.sub(this.computeCenterOfMass());
+                const d = delta.mag();
+                delta = delta.normalize();
+
+                for (const node of this.nodes) {
+                    let force = delta.mult(this.attractionForce * d);
+                    force = force.sub(node.vel);
+                    node.acc = node.acc.lerp(force, 0.5);
+                }
+
+
+            }
+
+            randomGrowth() {
+                // insert a new node at a random position between two existing nodes and update the path
+                let i = (mathRand() * this.nodes.length) | 0;
+                let j = (i + 1) % this.nodes.length;
+                let x = (this.nodes[i].pos.x + this.nodes[j].pos.x) / 2;
+                let y = (this.nodes[i].pos.y + this.nodes[j].pos.y) / 2;
+                let node = new Node(x, y);
+                this.nodes.splice(j, 0, node);
+                this.nodes[j].iniPos = this.nodes[j].pos.copy();
+                if (j - 1 >= 0) {
+                    this.nodes[j].neighbors.push(this.nodes[j - 1]);
+                    this.nodes[j - 1].neighbors.push(this.nodes[j]);
+                }
+                if (j + 1 < this.nodes.length) {
+                    this.nodes[j].neighbors.push(this.nodes[j + 1]);
+                    this.nodes[j + 1].neighbors.push(this.nodes[j]);
+                }
+            }
+
+            diffGrowth() {
+                // add a node on the path between 2 existing nodes if their distance is longer than maxedgelength, disconnect old neighbors and connect the new node to the neighbors
+                for (let i = 0; i < this.nodes.length; i++) {
+                    let node = this.nodes[i];
+                    let j = (i + 1) % this.nodes.length;
+                    let nextNode = this.nodes[j];
+                    let distance = node.pos.dist(nextNode.pos);
+                   
+                    if (distance > this.maxEdgeLength) {
+                        let newNode = new Node((node.pos.x + nextNode.pos.x) / 2, (node.pos.y + nextNode.pos.y) / 2);
+                        this.nodes.splice(j, 0, newNode);
+                        nodes.push(newNode);
+                        // remove neighbor j from node i and add the new node
+                        node.neighbors.splice(node.neighbors.indexOf(nextNode), 1, newNode);
+                        // node.neighbors.push(newNode);
+                        newNode.neighbors.push(node);
+                        // remove neighbor i from node j and add the new node
+                        nextNode.neighbors.splice(nextNode.neighbors.indexOf(node), 1, newNode);
+                        // nextNode.neighbors.push(newNode);
+                        newNode.neighbors.push(nextNode);
+
+                        
+                        
+                        break;
+                    }
+                    
+
+                }
+            }
+
+            // randomlly grow the path
+
+
+            // calculate the 
+
+            computeCenterOfMass() {
+                let sum = new Vector(0, 0);
+                for (const node of this.nodes) {
+                    sum = sum.add(node.pos);
+                }
+                const centerOfMass = sum.div(this.nodes.length);
+                return centerOfMass;
+            }
+
+            // compute path diameter
+            diameter() {
+                let maxDist = 0;
+                for (let i = 0; i < this.nodes.length; i++) {
+                    for (let j = 0; j < this.nodes.length; j++) {
+                        let dist = this.nodes[i].pos.dist(this.nodes[j].pos);
+                        if (dist > maxDist) {
+                            maxDist = dist;
+                        }
+                    }
+                }
+                return maxDist;
+            }
+
+
+
+        }
+
+        class World {
+            constructor() {
+                this.paths = [];
+                this.polygons = this.generatePolygonGrid(rows, cols, scl);
+                this.attractionForce = 3.6;
+                this.maxForce = 1;
+            }
+
+            generatePolygonGrid(rowCount, colCount, polygonSize) {
+                const polygons = [];
+                const xOffset = (width - (colCount * polygonSize)) / 2; // Calculate horizontal offset
+                const yOffset = (height - (rowCount * polygonSize)) / 2; // Calculate vertical offset
+
+                for (let row = 0; row < rowCount; row++) {
+                    for (let col = 0; col < colCount; col++) {
+                        const x = xOffset + col * polygonSize; // Calculate x position
+                        const y = yOffset + row * polygonSize; // Calculate y position
+                        const polygon = new Polygon(x, y, polygonSize); // Create a new Polygon instance
+                        polygons.push(polygon); // Add the polygon to the polygons array
+                    }
+                }
+
+                return polygons; // Return the array of polygons
+            }
+
+        }
+
+        // class Polygon, is a polygon that make a grid in the World canvas
+        // the polygon are connected to each other and the path nodes are constrained to stay within the polygon
+
+        class Polygon {
+            constructor(x, y, size) {
+                this.size = size;
+                this.vertices = [];
+                this.spot = false;
+                this.center = new Vector(x + size / 2, y + size / 2);
+                this.vertices.push(new Vector(x, y));
+                this.vertices.push(new Vector(x + size, y));
+                this.vertices.push(new Vector(x + size, y + size));
+                this.vertices.push(new Vector(x, y + size));
+
+            }
+            draw = () => {
+                ctx.strokeStyle = "#000";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(this.vertices[0].x, this.vertices[0].y);
+                for (let i = 1; i < this.vertices.length; i++) {
+                    ctx.lineTo(this.vertices[i].x, this.vertices[i].y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+                if (this.spot) {
+                    ctx.fillStyle = "#000";
+                    ctx.beginPath();
+                    ctx.arc(this.center.x, this.center.y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+        window.onload = function () {
+            init();
+        }
+
+
+        function capture(e) {
+            if (e.key === "s") {
+                var link = document.createElement('a');
+                link.download = 'origin.png';
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            }
+        }
+
+
+        function audioPlay(e) {
+            if (!play) {
+                trigger = true;
+                console.log("play");
+            } else {
+
+            }
+            play = true;
+        }
+
+        function mouseMove(event) {
+            var rect = canvas.getBoundingClientRect();
+
+            mouseX = (event.clientX - rect.left - width / 2) | 0;
+            mouseY = (event.clientY - rect.top - height / 2) | 0;
+        }
+
+        function touchMove(e) {
+            var touch = e.touches[0];
+            var rect = canvas.getBoundingClientRect();
+            mouseX = (touch.clientX - rect.left - width / 2) | 0;
+            mouseY = (touch.clientY - rect.top - height / 2) | 0;
+        }
+
+        function mapRange(value, start1, stop1, start2, stop2) {
+            return start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));
+        }
+
+        function randomRange(min, max) {
+            let cal = (mathRand() * (max - min) + min);
+            return parseFloat(cal);
+        }
+
+        function interpolate_coord(x, y, grid, cols) {
+            let i = (mapRange(x, -width / 2, width / 2, 0, width) / grid) | 0;
+            let j = (mapRange(y, -height / 2, height / 2, 0, height) / grid) | 0;
+
+            var index = i + j * cols;
+            return index;
+        }
+
+        function easeOutQuint(t) {
+            return 1 + (--t) * t * t * t * t;
+        }
+
+        function lerp(start, stop, amt) {
+            return amt * (stop - start) + start;
+        };
+
+        function norm(n, start, stop) {
+            return mapRange(n, start, stop, 0, 1);
+        };
+
+        function millis() {
+            return Date.now() - start;
+        }
+
+
+        // using html5 canvas and web audio api in native javascript no libraries. 
+        // creating a fm synthesizer class made of 8 oscillators, a class and envelope with adsr and a modulation envelope. the synthesizer generate house dub techno coppery stab sounds. Use multiple oscillators and envelopes. The synthesizer should accept chords and have effect such as delay, reverb, pingpong delay lowpass filter and high pass filter. 
+        // the synthesizer should be able to play chords.
+
+        // create an oscillator class
+        class Oscillator {
+            constructor(audioCtx, type, frequency, detune, volume) {
+                this.audioCtx = audioCtx;
+                this.type = type;
+                this.frequency = frequency;
+                this.detune = detune;
+                this.oscillator = this.audioCtx.createOscillator();
+                this.oscillator.type = this.type;
+                this.oscillator.frequency.value = this.frequency;
+                this.oscillator.detune.value = this.detune;
+                this.gainNode = this.audioCtx.createGain();
+                this.gainNode.gain.value = volume;
+                this.lfo = new LFO(audioCtx, 'sine', 15, 0.8);
+                this.lfo.connect(this.oscillator.frequency);
+            }
+            connect(node) {
+                this.oscillator.connect(this.gainNode);
+                this.gainNode.connect(node);
+            }
+            disconnect() {
+                this.oscillator.disconnect();
+            }
+            setFrequency(frequency) {
+                this.oscillator.frequency.value = frequency;
+            }
+            setDetune(detune) {
+                this.oscillator.detune.value = detune;
+            }
+            setType(type) {
+                this.oscillator.type = type;
+            }
+            start() {
+                this.oscillator.start();
+            }
+            stop() {
+                this.oscillator.stop();
+            }
+        }
+
+        // create a class for the envelope
+        class Envelope {
+            constructor(audioCtx, attack, decay, sustain, release) {
+                this.audioCtx = audioCtx;
+                this.attack = attack;
+                this.decay = decay;
+                this.sustain = sustain;
+                this.release = release;
+                this.gain = this.audioCtx.createGain();
+                this.gain.gain.value = 0.27;
+                this.gain.connect(this.audioCtx.destination);
+            }
+            connect(node) {
+                this.gain.connect(node);
+            }
+            disconnect() {
+                this.gain.disconnect();
+            }
+            triggerAttack() {
+                this.gain.gain.cancelScheduledValues(this.audioCtx.currentTime);
+                this.gain.gain.setValueAtTime(0, this.audioCtx.currentTime);
+
+                /*
+                this.gain.gain.linearRampToValueAtTime(1, this.audioCtx.currentTime + this.attack);
+                this.gain.gain.linearRampToValueAtTime(this.sustain, this.audioCtx.currentTime + this.attack + this.decay);*/
+
+                const initialGain = 0.0001;
+                this.gain.gain.linearRampToValueAtTime(initialGain, this.audioCtx.currentTime + this.attack * 0.2); // 20% of attack time
+                this.gain.gain.linearRampToValueAtTime(1, this.audioCtx.currentTime + this.attack);
+                this.gain.gain.linearRampToValueAtTime(this.sustain, this.audioCtx.currentTime + this.attack + this.decay);
+            }
+            triggerRelease() {
+                this.gain.gain.cancelScheduledValues(this.audioCtx.currentTime);
+                this.gain.gain.setValueAtTime(this.gain.gain.value, this.audioCtx.currentTime);
+                // this.gain.gain.linearRampToValueAtTime(0, this.audioCtx.currentTime + this.release);
+                this.gain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + this.release);
+            }
+        }
+
+        // create a class for the modulation envelope
+        class ModulationEnvelope {
+            constructor(audioCtx, attack, decay, sustain, release) {
+                this.audioCtx = audioCtx;
+                this.attack = attack;
+                this.decay = decay;
+                this.sustain = sustain;
+                this.release = release;
+                this.gain = this.audioCtx.createGain();
+                this.gain.gain.value = 0.32;
+                this.gain.connect(this.audioCtx.destination);
+            }
+            connect(node) {
+                this.gain.connect(node);
+            }
+            disconnect() {
+                this.gain.disconnect();
+            }
+            triggerAttack() {
+                this.gain.gain.cancelScheduledValues(this.audioCtx.currentTime);
+                this.gain.gain.setValueAtTime(0, this.audioCtx.currentTime);
+                /*
+                this.gain.gain.linearRampToValueAtTime(1, this.audioCtx.currentTime + this.attack);
+                this.gain.gain.linearRampToValueAtTime(this.sustain, this.audioCtx.currentTime + this.attack + this.decay);*/
+
+                const initialGain = 0.0001;
+                this.gain.gain.linearRampToValueAtTime(initialGain, this.audioCtx.currentTime + this.attack * 0.2); // 20% of attack time
+                this.gain.gain.linearRampToValueAtTime(1, this.audioCtx.currentTime + this.attack);
+                this.gain.gain.linearRampToValueAtTime(this.sustain, this.audioCtx.currentTime + this.attack + this.decay);
+            }
+            triggerRelease() {
+                this.gain.gain.cancelScheduledValues(this.audioCtx.currentTime);
+                this.gain.gain.setValueAtTime(this.gain.gain.value, this.audioCtx.currentTime);
+                // this.gain.gain.linearRampToValueAtTime(0, this.audioCtx.currentTime + this.release);
+                this.gain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + this.release);
+            }
+        }
+
+        class FMSynth {
+            constructor(audioCtx, numberOfOscillators, envelope, mod_envelope, volume) {
+                this.audioCtx = audioCtx;
+                this.numberOfOscillators = numberOfOscillators;
+                this.oscillators = [];
+                this.modulationEnvelopes = [];
+                this.filterEnvelopes = [];
+                this.mod_envelope = mod_envelope;
+                this.volume = volume;
+                this.envelope = new Envelope(this.audioCtx, envelope.attack, envelope.decay, envelope.sustain, envelope.release);
+                this.output = this.audioCtx.createGain();
+                this.output.gain.value = 0.3;
+                this.output.connect(this.audioCtx.destination);
+                this.envelope.connect(this.output);
+                this.createOscillators();
+                this.createModulationEnvelopes();
+                this.createEffects();
+
+            }
+            createOscillators() {
+                this.oscillators.push(new Oscillator(this.audioCtx, 'sine', 293, 1, this.volume));
+                this.oscillators.push(new Oscillator(this.audioCtx, 'sine', 587, -2, this.volume));
+                this.oscillators.push(new Oscillator(this.audioCtx, 'sine', 1174, -7, this.volume));
+                this.oscillators.push(new Oscillator(this.audioCtx, 'sine', 196, 9, this.volume));
+                this.oscillators.push(new Oscillator(this.audioCtx, 'sine', 392, 5, this.volume));
+            }
+            createModulationEnvelopes() {
+                for (let i = 0; i < this.numberOfOscillators; i++) {
+                    let modulationEnvelope = new ModulationEnvelope(this.audioCtx, this.mod_envelope.attack, this.mod_envelope.decay, this.mod_envelope.sustain, this.mod_envelope.release);
+                    this.modulationEnvelopes.push(modulationEnvelope);
+                }
+            }
+            createEffects() {
+                this.reverb = new Reverb(this.audioCtx);
+                this.reverb.connect(this.output);
+                this.delay = new Delay(this.audioCtx);
+                this.delay.connect(this.output);
+                this.pingPongDelay = new PingPongDelay2(this.audioCtx);
+                this.pingPongDelay.connect(this.output);
+                this.pingPongDelay.startAutoPanner();
+                this.flanger = new Flanger(this.audioCtx);
+                this.flanger.connect(this.output);
+                this.lowPassFilter = new Filter(this.audioCtx, 'lowpass', 900, 1);
+                this.lowPassFilter.connect(this.output);
+                this.highPassFilter = new Filter(this.audioCtx, 'highpass', 300, 0.6);
+                this.highPassFilter.connect(this.output);
+                this.tapeSaturator = new TapeSaturator(this.audioCtx);
+                this.tapeSaturator.connect(this.output);
+
+                // connect effects to all the modulations envelopes
+                for (let i = 0; i < this.numberOfOscillators; i++) {
+                    this.modulationEnvelopes[i].connect(this.reverb.input);
+                    this.modulationEnvelopes[i].connect(this.delay.input);
+                    this.modulationEnvelopes[i].connect(this.pingPongDelay.input);
+                    this.modulationEnvelopes[i].connect(this.flanger.input);
+                    this.modulationEnvelopes[i].connect(this.lowPassFilter.input);
+                    this.modulationEnvelopes[i].connect(this.highPassFilter.input);
+                    this.modulationEnvelopes[i].connect(this.tapeSaturator.input);
+                    // this.modulationEnvelopes[i].connect(this.envelope.gain);
+
+                }
+            }
+            connect(node) {
+                this.output.connect(node);
+            }
+            disconnect() {
+                this.output.disconnect();
+            }
+            triggerAttack(notes) {
+                for (let i = 0; i < this.numberOfOscillators; i++) {
+                    let frequency = notes[i] | 0;
+                    this.oscillators[i].setFrequency(frequency);
+                    this.oscillators[i].connect(this.modulationEnvelopes[i].gain);
+                    this.modulationEnvelopes[i].triggerAttack();
+                    this.modulationEnvelopes[i].connect(this.output.gain);
+                }
+                this.envelope.triggerAttack();
+                this.envelope.connect(this.modulationEnvelopes[0].gain);
+            }
+            triggerRelease() {
+                for (let i = 0; i < this.numberOfOscillators; i++) {
+                    this.oscillators[i].disconnect();
+                    this.modulationEnvelopes[i].triggerRelease();
+                }
+                this.envelope.triggerRelease();
+            }
+
+            triggerAttackRelease(notes, duration) {
+                this.triggerAttack(notes);
+                setTimeout(() => {
+                    this.triggerRelease();
+                }, duration);
+            }
+            start() {
+                this.oscillators.forEach(oscillator => {
+                    oscillator.start();
+                }
+                );
+            }
+            stop() {
+                this.oscillators.forEach(oscillator => {
+                    oscillator.stop();
+                }
+                );
+            }
+
+
+
+        }
+
+        class DroneSynth extends FMSynth {
+            constructor(audioCtx, n, envelope, mod_envelope, volume) {
+                super(audioCtx, n, envelope, mod_envelope, volume); // call the constructor of the parent class
+                this.numberOfOscillators = n;
+                this.createEffects();
+            }
+            createEffects() {
+                this.chorus = new Chorus(this.audioCtx);
+                this.chorus.connect(this.output);
+                this.delay = new Delay(this.audioCtx);
+                this.delay.connect(this.output);
+                this.reverb = new Reverb(this.audioCtx);
+                this.reverb.connect(this.output);
+                this.drone = new Drone(this.audioCtx);
+                this.drone.connect(this.output);
+
+                // connect effects to all the modulations envelopes
+                for (let i = 0; i < this.numberOfOscillators; i++) {
+                    this.modulationEnvelopes[i].connect(this.chorus.input);
+                    this.modulationEnvelopes[i].connect(this.delay.input);
+                    this.modulationEnvelopes[i].connect(this.reverb.input);
+                    this.modulationEnvelopes[i].connect(this.drone.input);
+                    // this.modulationEnvelopes[i].connect(this.envelope.gain);
+                }
+            }
+
+        }
+
+        class PadSynth extends FMSynth {
+            constructor(audioCtx, n, envelope, mod_envelope, volume) {
+                super(audioCtx, n, envelope, mod_envelope, volume); // call the constructor of the parent class
+                this.numberOfOscillators = n;
+                this.createEffects();
+            }
+            createEffects() {
+                this.chorus = new Chorus(this.audioCtx);
+                this.chorus.connect(this.output);
+
+                this.delay = new Delay(this.audioCtx);
+                this.delay.connect(this.output);
+                this.delay.setDelayTime(3 / 4);
+                this.delay.setFeedback(0.8);
+                this.reverb = new Reverb(this.audioCtx);
+                this.reverb.connect(this.output);
+                this.reverb.setDelayTime(0.5);
+                this.reverb.setWet(0.8);
+                this.autoFilter = new AutoFilter(this.audioCtx);
+                this.autoFilter.connect(this.output);
+                this.StereoWidener = new StereoWidener(this.audioCtx);
+                this.StereoWidener.connect(this.output);
+                this.StereoWidener.setWidth(2);
+                this.tapeSaturator = new TapeSaturator(this.audioCtx);
+                this.tapeSaturator.connect(this.output);
+                this.tapeSaturator.setDrive(0.7);
+
+                // connect effects to all the modulations envelopes
+                for (let i = 0; i < this.numberOfOscillators; i++) {
+                    this.modulationEnvelopes[i].connect(this.chorus.input);
+
+
+                    this.modulationEnvelopes[i].connect(this.reverb.input);
+                    this.modulationEnvelopes[i].connect(this.autoFilter.input);
+                    // this.modulationEnvelopes[i].connect(this.delay.input);
+                    this.modulationEnvelopes[i].connect(this.delay.input);
+                    this.modulationEnvelopes[i].connect(this.StereoWidener.input);
+                    this.modulationEnvelopes[i].connect(this.tapeSaturator.input);
+
+                    // this.modulationEnvelopes[i].connect(this.envelope.gain);
+                }
+
+            }
+
+        }
+
+
+        // class stereo widening effect
+        class StereoWidener {
+            constructor(audioCtx) {
+                this.audioCtx = audioCtx;
+                this.input = this.audioCtx.createGain();
+                this.output = this.audioCtx.createGain();
+                this.input.connect(this.output);
+                this.splitter = this.audioCtx.createChannelSplitter(2);
+                this.merger = this.audioCtx.createChannelMerger(2);
+                this.leftGain = this.audioCtx.createGain();
+                this.rightGain = this.audioCtx.createGain();
+                this.leftGain.gain.value = 0.5;
+                this.rightGain.gain.value = 0.5;
+                this.input.connect(this.splitter);
+                this.splitter.connect(this.leftGain, 0);
+                this.splitter.connect(this.rightGain, 1);
+                this.leftGain.connect(this.merger, 0, 0);
+                this.rightGain.connect(this.merger, 0, 1);
+                this.merger.connect(this.output);
+            }
+            connect(node) {
+                this.output.connect(node);
+            }
+            disconnect() {
+                this.output.disconnect();
+            }
+            setWidth(width) {
+                this.width = width;
+                this.leftGain.gain.value = 0.5 * (1 - this.width);
+                this.rightGain.gain.value = 0.5 * (1 + this.width);
+            }
+
+        }
+
+        // class chorus effect
+        class Chorus {
+            constructor(audioCtx, depth = 0.8, delayTime = 0.6, feedback = 0.54) {
+                this.audioCtx = audioCtx;
+                this.input = this.audioCtx.createGain();
+                this.output = this.audioCtx.createGain();
+                this.input.connect(this.output);
+
+                this.depth = depth; // LFO depth (0 to 1)
+                this.delayTime = delayTime; // Delay time in seconds
+                this.feedback = feedback; // Feedback amount (0 to 1)
+
+                this.lfo = new LFO(audioCtx, 'sine', 5, 0.3);
+                this.delay = this.audioCtx.createDelay();
+                this.feedbackGain = this.audioCtx.createGain();
+                this.feedbackGain.gain.value = this.feedback;
+                this.input.connect(this.delay);
+                this.delay.connect(this.feedbackGain);
+                this.feedbackGain.connect(this.delay);
+                this.lfo.connect(this.delay.delayTime);
+            }
+
+            connect(node) {
+                this.output.connect(node);
+            }
+
+            disconnect() {
+                this.output.disconnect();
+            }
+        }
+
+
+
+        // class to tape saturate the audio to make it sound more analog
+        class TapeSaturator {
+            constructor(audioCtx) {
+                this.audioCtx = audioCtx;
+                this.input = this.audioCtx.createGain();
+                this.output = this.audioCtx.createGain();
+                this.input.connect(this.output);
+                this.waveShaper = this.audioCtx.createWaveShaper();
+                this.waveShaper.connect(this.output);
+                this.input.connect(this.waveShaper);
+                this.setDrive(0.7); // 
+            }
+            connect(node) {
+                this.output.connect(node);
+            }
+            disconnect() {
+                this.output.disconnect();
+            }
+            setDrive(drive) {
+                this.drive = drive;
+                this.makeDistortionCurve();
+            }
+            makeDistortionCurve() {
+                let k = this.drive;
+                let n_samples = this.audioCtx.sampleRate;
+                let curve = new Float32Array(n_samples);
+                let deg = Math.PI / 180;
+                for (let i = 0; i < n_samples; ++i) {
+                    let x = i * 2 / n_samples - 1;
+                    curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+                }
+                this.waveShaper.curve = curve;
+            }
+        }
+
+        // Auto filter creating a tremolo effect with a low pass filter by modulating the filter cutoff frequency
+        // between a range of frequency at the rate of the LFO
+
+        class AutoFilter {
+            constructor(audioCtx, frequency = 1, gain = 1) {
+                this.audioCtx = audioCtx;
+                this.input = this.audioCtx.createGain();
+                this.output = this.audioCtx.createGain();
+                this.gain = this.audioCtx.createGain();
+                this.input.connect(this.output);
+                this.lfo = new LFO(audioCtx, 'sine', frequency, gain);
+                this.filter = this.audioCtx.createBiquadFilter();
+                this.filter.type = 'lowpass';
+                this.filter.frequency.value = 1000;
+                this.filter.Q.value = 5;
+                this.lfo.connect(this.gain);
+                this.gain.gain.value = 10000;
+                this.gain.connect(this.filter.frequency);
+                this.input.connect(this.filter);
+                this.filter.connect(this.output);
+            }
+            connect(node) {
+                this.output.connect(node);
+            }
+            disconnect() {
+                this.output.disconnect();
+            }
+            setFrequency(frequency) {
+                this.lfo.frequency = frequency;
+            }
+            setGain(gain) {
+                this.lfo.gain = gain;
+            }
+        }
+
+
+
+
+
+        // Stereo effect class to give width to the sound 0 = mono, 1 = stereo, 2 = wide stereo
+        // the effect give an idea of space between the sounds
+
+        class LFO {
+            constructor(audioCtx, type, frequency, gain) {
+                this.audioCtx = audioCtx;
+                this.type = type;
+                this.frequency = frequency;
+                this.gain = gain;
+                this.oscillator = this.audioCtx.createOscillator();
+                this.oscillator.type = this.type;
+                this.oscillator.frequency.value = this.frequency;
+                this.gainNode = this.audioCtx.createGain();
+                this.gainNode.gain.value = this.gain;
+                this.oscillator.connect(this.gainNode);
+                this.start();
+            }
+            start() {
+                this.oscillator.start();
+            }
+            stop() {
+                this.oscillator.stop();
+            }
+            connect(node) {
+                this.gainNode.connect(node);
+            }
+            disconnect() {
+                this.gainNode.disconnect();
+            }
+            setFrequency(frequency) {
+                this.oscillator.frequency.value = frequency;
+            }
+            setGain(gain) {
+                this.gainNode.gain.value = gain;
+            }
+        }
+
+
+        // Effects class to loop back audio and access buffer to create a bass drone effect
+        class Drone {
+            constructor(audioCtx) {
+                this.audioCtx = audioCtx;
+                this.input = this.audioCtx.createGain();
+                this.output = this.audioCtx.createGain();
+                this.input.connect(this.output);
+                this.delay = this.audioCtx.createDelay();
+                this.delay.connect(this.output);
+                // this.delay.connect(this.input);
+                this.delay.delayTime.value = 3 / 4;
+
+                this.feedback = this.audioCtx.createGain();
+                this.feedback.gain.value = 0.2;
+                this.delay.connect(this.feedback);
+                this.input.connect(this.delay);
+                this.feedback.connect(this.delay);
+            }
+            connect(node) {
+                this.output.connect(node);
+            }
+            disconnect() {
+                this.output.disconnect();
+            }
+        }
+
+
+
+        class Reverb {
+            constructor(audioCtx) {
+                this.audioCtx = audioCtx;
+                this.input = this.audioCtx.createGain();
+                this.output = this.audioCtx.createGain();
+                this.input.connect(this.output);
+                this.convolver = this.audioCtx.createConvolver();
+                this.convolver.buffer = this.audioCtx.createBuffer(2, audioCtx.sampleRate * 3, audioCtx.sampleRate);
+                this.delay = this.audioCtx.createDelay(0.5);
+                this.delay.delayTime.value = 3 / 8;
+                this.wetGain = this.audioCtx.createGain();
+                this.convolver.connect(this.wetGain);
+                this.wetGain.connect(this.output);
+                this.wetGain.gain.value = 0.82;
+                this.input.connect(this.delay);
+                this.delay.connect(this.convolver);
+                this.input.connect(this.convolver);
+                this.convolver.connect(this.output);
+            }
+            connect(node) {
+                this.output.connect(node);
+            }
+            disconnect() {
+                this.output.disconnect();
+            }
+            setWet(wet) {
+                this.wetGain.gain.value = wet;
+            }
+            setDelayTime(delayTime) {
+                this.delay.delayTime.value = delayTime;
+            }
+        }
+
+
+        class Delay {
+            constructor(audioCtx) {
+                this.audioCtx = audioCtx;
+                this.input = this.audioCtx.createGain();
+                this.output = this.audioCtx.createGain();
+                this.input.connect(this.output);
+                this.delay = this.audioCtx.createDelay();
+                this.delay.delayTime.value = 3 / 4;
+
+                this.feedback = this.audioCtx.createGain();
+                this.feedback.gain.value = 0.73;
+                this.delay.connect(this.feedback);
+                this.input.connect(this.delay);
+                this.delay.connect(this.output);
+                this.feedback.connect(this.input);
+            }
+            connect(node) {
+                this.output.connect(node);
+            }
+            disconnect() {
+                this.output.disconnect();
+            }
+            setDelayTime(delayTime) {
+                this.delay.delayTime.value = delayTime;
+            }
+            setFeedback(feedback) {
+                this.feedback.gain.value = feedback;
+            }
+        }
+
+        class PingPongDelay2 {
+            constructor(audioCtx) {
+                this.audioCtx = audioCtx;
+                this.input = this.audioCtx.createGain();
+                this.output = this.audioCtx.createGain();
+                this.input.connect(this.output);
+                this.delay = this.audioCtx.createDelay();
+                this.delay.delayTime.value = 3 / 4;
+                this.panner1 = this.audioCtx.createStereoPanner();
+                this.panner2 = this.audioCtx.createStereoPanner();
+                this.feedback = this.audioCtx.createGain();
+                this.feedback.gain.value = 0.8;
+                this.wet = this.audioCtx.createGain();
+                this.wet.gain.value = 0.89;
+                this.input.connect(this.delay);
+                this.delay.connect(this.panner1);
+                this.panner1.connect(this.feedback);
+                this.feedback.connect(this.delay);
+                this.delay.connect(this.panner2);
+                this.panner2.connect(this.wet);
+                this.wet.connect(this.output);
+                this.input.connect(this.output);
+                // Auto panning effect
+                this.autoPanner = this.audioCtx.createStereoPanner();
+                this.autoPanner.pan.value = -1;
+                this.autoPannerRate = 1; // rate of panning in Hz
+                this.panner1.connect(this.autoPanner);
+                this.autoPanner.connect(this.panner2);
+            }
+            connect(node) {
+                this.output.connect(node);
+            }
+            disconnect() {
+                this.output.disconnect();
+            }
+            setDelayTime(delayTime) {
+                this.delay.delayTime.value = delayTime;
+            }
+            setAutoPannerRate(rate) {
+                this.autoPannerRate = rate;
+                this.autoPannerRateIncr = (2 / this.audioCtx.sampleRate) * this.autoPannerRate;
+            }
+            startAutoPanner() {
+                const now = this.audioCtx.currentTime;
+                this.autoPanner.pan.setValueAtTime(-1, now);
+                this.autoPanner.pan.linearRampToValueAtTime(1, now + 1 / this.autoPannerRate);
+                this.autoPanner.pan.setValueAtTime(1, now + 2 / this.autoPannerRate);
+                this.autoPanner.pan.linearRampToValueAtTime(-1, now + 3 / this.autoPannerRate);
+                this.autoPannerLoop = setInterval(() => {
+                    const t = this.audioCtx.currentTime;
+                    this.autoPanner.pan.setValueAtTime(-1, t);
+                    this.autoPanner.pan.linearRampToValueAtTime(1, t + 1 / this.autoPannerRate);
+                    this.autoPanner.pan.setValueAtTime(1, t + 2 / this.autoPannerRate);
+                    this.autoPanner.pan.linearRampToValueAtTime(-1, t + 3 / this.autoPannerRate);
+                }, 4 / this.autoPannerRate * 1000);
+            }
+            stopAutoPanner() {
+                clearInterval(this.autoPannerLoop);
+            }
+            setDelayTime(delayTime) {
+                this.delay.delayTime.value = delayTime;
+            }
+            setFeedback(feedback) {
+                this.feedback.gain.value = feedback;
+            }
+            setWet(wet) {
+                this.wet.gain.value = wet;
+            }
+        }
+
+
+
+        class Filter {
+            constructor(audioCtx, type, frequency, wet) {
+                this.audioCtx = audioCtx;
+                this.input = this.audioCtx.createGain();
+                this.output = this.audioCtx.createGain();
+                this.input.connect(this.output);
+                this.filter = this.audioCtx.createBiquadFilter();
+                this.filter.type = type;
+                this.filter.frequency.value = frequency;
+                // filter wet control
+                this.filterWet = this.audioCtx.createGain();
+                this.filterWet.gain.value = wet;
+                this.input.connect(this.filterWet);
+                this.filterWet.connect(this.filter);
+                this.input.connect(this.filter);
+                this.filter.connect(this.output);
+            }
+
+            connect(node) {
+                this.output.connect(node);
+            }
+            disconnect() {
+                this.output.disconnect();
+            }
+            setFrequency(frequency) {
+                this.filter.frequency.value = frequency;
+            }
+        }
+
+        // Flanger effect class
+        class Flanger {
+            constructor(audioCtx) {
+                this.audioCtx = audioCtx;
+                this.input = this.audioCtx.createGain();
+                this.output = this.audioCtx.createGain();
+                this.input.connect(this.output);
+                this.delay = this.audioCtx.createDelay();
+                this.delay.delayTime.value = 0.04;
+                this.lfo = this.audioCtx.createOscillator();
+                this.lfo.frequency.value = 0.5;
+                this.lfoGain = this.audioCtx.createGain();
+                this.lfoGain.gain.value = 0.2;
+                this.lfo.connect(this.lfoGain);
+                this.lfoGain.connect(this.delay.delayTime);
+                this.lfo.start();
+                this.input.connect(this.delay);
+                this.delay.connect(this.output);
+                this.input.connect(this.output);
+            }
+            connect(node) {
+                this.output.connect(node);
+            }
+            disconnect() {
+                this.output.disconnect();
+            }
+        }
+
+
+        class Compressor {
+            constructor(audioCtx) {
+                this.audioCtx = audioCtx;
+                this.input = this.audioCtx.createGain();
+                this.output = this.audioCtx.createGain();
+                this.input.connect(this.output);
+                this.compressor = this.audioCtx.createDynamicsCompressor();
+                this.compressor.threshold.value = -32; // -50
+                this.compressor.knee.value = 30; // 40
+                this.compressor.ratio.value = 12; // 12
+                this.compressor.attack.value = 0.03; // 0.03
+                this.compressor.release.value = 0.23; // 0.25
+                this.input.connect(this.compressor);
+                this.compressor.connect(this.output);
+
+                this.makeupGain = this.audioCtx.createGain();
+                this.makeupGain.gain.value = 0.1; // Adjust makeup gain to control dynamic range
+                this.compressor.connect(this.makeupGain);
+                this.makeupGain.connect(this.output);
+            }
+            connect(node) {
+                this.output.connect(node);
+            }
+            disconnect() {
+                this.output.disconnect();
+            }
+        }
+
+        class FFT {
+            constructor(audioCtx) {
+                this.audioCtx = audioCtx;
+                this.analyser = this.audioCtx.createAnalyser();
+                this.analyser.fftSize = 2048;
+                this.bufferLength = this.analyser.frequencyBinCount;
+                this.dataArray = new Uint8Array(this.bufferLength);
+            }
+
+            connect(node) {
+                this.analyser.connect(node);
+            }
+
+            disconnect() {
+                this.analyser.disconnect();
+            }
+
+            getWaveform() {
+                this.analyser.getByteTimeDomainData(this.dataArray);
+                return this.dataArray;
+            }
+
+            getFrequencyData() {
+                this.analyser.getByteFrequencyData(this.dataArray);
+                return this.dataArray;
+            }
+            // get amplitude of the waveform
+            getAmplitude() {
+                const waveform = this.getWaveform();
+                let sum = 0;
+                for (let i = 0; i < waveform.length; i++) {
+                    sum += waveform[i] / 128 - 1; // normalize the waveform data to be between -1 and 1
+                }
+                return Math.abs(sum / waveform.length);
+            }
+        }
+
+
+        // function to convert music key and octave to frequency
+        function noteToFrequency(note) {
+            let keyNumber;
+            if (note.length === 3) {
+                keyNumber = notes.indexOf(note.slice(0, 2));
+                keyNumber = keyNumber + (parseInt(note.slice(2)) + 1) * 12;
+            } else {
+                keyNumber = notes.indexOf(note.slice(0, 1));
+                keyNumber = keyNumber + parseInt(note.slice(1)) * 12;
+            }
+            return 440 * Math.pow(2, (keyNumber - 49) / 12);
+        }
+        function voicing(note) {
+            // randomly voicing up or down the note. up if the octave is below 5, down if the octave is above 3
+            let octave = splitNoteOctave(note)[1];
+            let key = splitNoteOctave(note)[0];
+
+            // voicing direction 0 = no change, 1 = up, -1 = down
+            let voicingDirection = 0;
+            // randomly choose voicing direction between 0 = no change, 1 = up, -1 = down
+            voicingDirection = Math.floor(Math.random() * 3) - 1;
+
+
+            if (octave <= 3) {
+                voicingDirection = 1;
+            } else if (octave >= 5) {
+                voicingDirection = -1;
+            }
+            const newOctave = octave + voicingDirection;
+            return `${key}${newOctave}`;
+
+        }
+
+        const getNextChordNote = (note, nextNoteNumber) => {
+
+            let chordScale = generateScale2(note, getKeyType(note));
+
+            const nextNoteInScaleIndex = chordScale.indexOf(note) + nextNoteNumber - 1;
+            let nextNote;
+
+            if (typeof (chordScale[nextNoteInScaleIndex]) !== 'undefined') {
+                nextNote = chordScale[nextNoteInScaleIndex];
+            } else {
+                nextNote = chordScale[nextNoteInScaleIndex - 7];
+                //console.log(nextNote)
+                if (nextNote.length === 3) {
+                    const updatedOctave = parseInt(nextNote.slice(2)) + 1;
+                    nextNote = `${nextNote.slice(0, 2)}${updatedOctave}`;
+                } else {
+                    const updatedOctave = parseInt(nextNote.slice(1)) + 1;
+                    nextNote = `${nextNote.slice(0, 1)}${updatedOctave}`;
+                }
+            }
+            return nextNote;
+        }
+        function generateChord(note) {
+
+            /*
+            const rootNote = note
+            const thirdNote = voicing(getNextChordNote(note, 3));
+            const fifthNote = voicing(getNextChordNote(note, 5));
+            const seventhNote = voicing(getNextChordNote(note, 7));
+            const ninethNote = voicing(getNextChordNote(note, 9));
+            const chord = [rootNote, thirdNote, fifthNote, seventhNote, ninethNote];
+            */
+
+            const rootNote = note
+            const thirdNote = getNextChordNote(note, 3);
+            const fifthNote = getNextChordNote(note, 5);
+            const seventhNote = getNextChordNote(note, 7);
+            const ninethNote = getNextChordNote(note, 9);
+            const chord = [rootNote, thirdNote, fifthNote, seventhNote, ninethNote];
+
+            return chord;
+
+        }
+
+
+        // helper function to get an index from the key signature
+        function getKeyListIndex(keySignature) {
+            if (keySignature === 'sharp') {
+                return 0;
+            } else if (keySignature === 'flat') {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+
+        function generateProgression(scale, flavor) {
+            let key_scale = [];
+            let octave = [];
+            // separate key and octave
+            for (let i = 0; i < scale.length; i++) {
+                key_scale.push(splitNoteOctave(scale[i])[0]);
+                octave.push(splitNoteOctave(scale[i])[1]);
+            }
+
+            let keySignature = getKeySignature(key_scale[0]);
+            let notesIndex = getKeyListIndex(keySignature);
+
+
+            const progression2 = [];
+            const circle_fifths = fifths[flavor];
+            const fifthsIndex = [];
+            for (let i = 0; i < key_scale.length; i++) {
+                fifthsIndex.push(circle_fifths.indexOf(key_scale[i]));
+            }
+
+            for (let i = 0; i < fifthsIndex.length; i++) {
+                if (fifthsIndex[i] === -1) { // if the key is not in the scale
+                    //key_scale.splice(i, 1);
+                    //octave.splice(i, 1);
+                    fifthsIndex.splice(i, 1);
+                    i--; // decrement index to account for the splice
+                }
+            }
+
+            // generate the progression
+            const degrees = degree; // degrees in the scale to use for chords
+            const chords = progression; // chords to use for each degree
+            for (let i = 0; i < degrees.length; i++) {
+                const degreeIndex = degrees[i];
+                const chord = chords[i];
+                const key = key_scale[degreeIndex];
+
+                const oct = octave[degreeIndex];
+                progression2.push(key + oct); // add the root note
+                const chordNotes = getChord(key, oct, chord, circle_fifths);
+
+                for (let j = 0; j < chordNotes.length; j++) {
+                    // add the note if it's in scal array
+                    // if (scale.includes(chordNotes[j])) {
+                    progression2.push(chordNotes[j]);
+                    // }
+                }
+            }
+
+            return progression2;
+        }
+
+        // helper function to get the note in a chord
+        function getChord(root, octave, chordType, fifths) {
+            const chordDegrees = getChordDegrees(chordType);
+            const chord = [];
+            for (let i = 0; i < chordDegrees.length; i++) {
+                const degree = chordDegrees[i];
+                const note = fifths[degree];
+                chord.push(note + octave);
+            }
+            return chord;
+
+        }
+
+        // helper function to get the scale degrees in a chord
+        function getChordDegrees(chordType) {
+            switch (chordType) {
+                case "I":
+                    return [0, 2, 4];
+                case "II":
+                    return [1, 3, 5];
+                case "III":
+                    return [2, 4, 6];
+                case "IV":
+                    return [3, 5, 0];
+                case "V":
+                    return [4, 6, 1];
+                case "VI":
+                    return [5, 0, 2];
+                case "VII":
+                    return [6, 1, 3];
+                default:
+                    return [0, 2, 4]; // default to major chord
+            }
+        }
+
+        function getCircularElement(arr, index) {
+            const circularIndex = ((index % arr.length) + arr.length) % arr.length;
+            return circularIndex;
+        }
+
+        // function to create a scale based on the root note and the scale type
+        function generateScale2(rootNote, scaleType) {
+
+            let note = splitNoteOctave(rootNote)[0];
+            let octave = splitNoteOctave(rootNote)[1];
+
+            let keySignature = getKeySignature(note);
+            let notesIndex = getKeyListIndex(keySignature);
+
+
+            let notes = _notes[notesIndex];
+
+            const scale = [];
+            const scaleIndex = notes.indexOf(note);
+            if (scaleType === 'major') {
+                scale.push(note + octave);
+                scale.push(notes[getCircularElement(notes, scaleIndex + 2)] + (scaleIndex + 2 > notes.length ? (parseInt(octave) + 1) : octave));
+                scale.push(notes[getCircularElement(notes, scaleIndex + 4)] + (scaleIndex + 4 > notes.length ? (parseInt(octave) + 1) : octave));
+                scale.push(notes[getCircularElement(notes, scaleIndex + 5)] + (scaleIndex + 5 > notes.length ? (parseInt(octave) + 1) : octave));
+                scale.push(notes[getCircularElement(notes, scaleIndex + 7)] + (scaleIndex + 7 > notes.length ? (parseInt(octave) + 1) : octave));
+                scale.push(notes[getCircularElement(notes, scaleIndex + 9)] + (scaleIndex + 9 > notes.length ? (parseInt(octave) + 1) : octave));
+                scale.push(notes[getCircularElement(notes, scaleIndex + 11)] + (scaleIndex + 11 > notes.length ? (parseInt(octave) + 1) : octave));
+                scale.push(notes[getCircularElement(notes, scaleIndex + 12)] + (scaleIndex + 12 > notes.length ? (parseInt(octave) + 1) : octave));
+            } else if (scaleType === 'minor') {
+                scale.push(note + octave);
+                scale.push(notes[getCircularElement(notes, scaleIndex + 2)] + (scaleIndex + 2 > notes.length ? (parseInt(octave) + 1) : octave));
+                scale.push(notes[getCircularElement(notes, scaleIndex + 3)] + (scaleIndex + 3 > notes.length ? (parseInt(octave) + 1) : octave));
+                scale.push(notes[getCircularElement(notes, scaleIndex + 5)] + (scaleIndex + 5 > notes.length ? (parseInt(octave) + 1) : octave));
+                scale.push(notes[getCircularElement(notes, scaleIndex + 7)] + (scaleIndex + 7 > notes.length ? (parseInt(octave) + 1) : octave));
+                scale.push(notes[getCircularElement(notes, scaleIndex + 8)] + (scaleIndex + 8 > notes.length ? (parseInt(octave) + 1) : octave));
+                scale.push(notes[getCircularElement(notes, scaleIndex + 10)] + (scaleIndex + 10 > notes.length ? (parseInt(octave) + 1) : octave));
+                scale.push(notes[getCircularElement(notes, scaleIndex + 12)] + (scaleIndex + 12 > notes.length ? (parseInt(octave) + 1) : octave));
+            }
+            return scale;
+        }
+
+        function getKeySignature(key) {
+            const keySignatures = {
+                'C': 'sharp',
+                'C#': 'sharp',
+                'Db': 'flat',
+                'D': 'sharp',
+                'D#': 'sharp',
+                'Eb': 'flat',
+                'E': 'sharp',
+                'F': 'flat',
+                'F#': 'sharp',
+                'Gb': 'flat',
+                'G': 'sharp',
+                'G#': 'sharp',
+                'Ab': 'flat',
+                'A': 'sharp',
+                'A#': 'sharp',
+                'Bb': 'flat',
+                'B': 'sharp'
+            };
+            return keySignatures[key];
+        }
+
+        // helper function to determine if a key is only major or minor or both
+        function getKeyType(note) {
+
+            const key = splitNoteOctave(note)[0];
+
+            if (musicKeys[0].indexOf(key) !== -1 && musicKeys[1].indexOf(key) !== -1) {
+
+                return flavour;
+            } else if (musicKeys[0].indexOf(key) !== -1) {
+                return 'major';
+            } else if (musicKeys[1].indexOf(key) !== -1) {
+                return 'minor';
+            }
+        }
+
+        // helper function to split a note string into note and octave
+        function splitNoteOctave(note) {
+            let noteName, octave;
+            if (note.length === 3) {
+                noteName = note.slice(0, 2);
+                octave = note.slice(2);
+            } else {
+                noteName = note.slice(0, 1);
+                octave = note.slice(1);
+            }
+            return [noteName, octave];
+        }
+
+        // function to decrease an array of music chords by one octave (music chords are represented as an array of notes)
+        function decreaseOctave(noteArray) {
+            const newNoteArray = [];
+            for (let i = 0; i < noteArray.length; i++) {
+                const newChord = [];
+                const chord = noteArray[i];
+                for (let j = 0; j < chord.length; j++) {
+                    let note, octave;
+                    if (chord[j].length === 3) {
+                        note = chord[j].slice(0, 2);
+                        octave = chord[j].slice(2);
+
+
+                        // if note is flat
+                    } else {
+                        note = chord[j].slice(0, 1);
+                        octave = chord[j].slice(1);
+
+
+                    }
+                    newChord.push(note + (parseInt(octave) - 1));
+
+                }
+                newNoteArray.push(newChord);
+            }
+            return newNoteArray;
+        }
+
+        function randomizeDelay(delayTime, grooveAmount) {
+            let minDelay = delayTime - (grooveAmount / 2);
+            let maxDelay = delayTime + (grooveAmount / 2);
+            return mathRand() * (maxDelay - minDelay) + minDelay;
+        }
+
+        function randomIndexOmit(array, omit) {
+            let randomIndex;
+            do {
+                randomIndex = (mathRand() * array.length) | 0;
+            } while (randomIndex === omit);
+            return randomIndex;
+        }
+
+    </script>
+
+    <script id="snippet-random-code" type="text/javascript">
+
+        // DO NOT EDIT THIS SECTION
+
+        let seed = window.location.href.split('/').find(t => t.includes('i0'));
+
+        if (seed == null) {
+            const alphabet = "0123456789abcdefghijklmnopqrstuvwsyz";
+            seed = new URLSearchParams(window.location.search).get("seed") || Array(64).fill(0).map(_ => alphabet[(Math.random() * alphabet.length) | 0]).join('') + "i0";
+        } else {
+            let pattern = "seed=";
+            for (let i = 0; i < seed.length - pattern.length; ++i) {
+                if (seed.substring(i, i + pattern.length) == pattern) {
+                    seed = seed.substring(i + pattern.length);
+                    break;
+                }
+            }
+        }
+
+        function cyrb128($) {
+            let _ = 1779033703, u = 3144134277, i = 1013904242, l = 2773480762;
+            for (let n = 0, r; n < $.length; n++) _ = u ^ Math.imul(_ ^ (r = $.charCodeAt(n)), 597399067), u = i ^ Math.imul(u ^ r, 2869860233), i = l ^ Math.imul(i ^ r, 951274213), l = _ ^ Math.imul(l ^ r, 2716044179);
+            return _ = Math.imul(i ^ _ >>> 18, 597399067), u = Math.imul(l ^ u >>> 22, 2869860233), i = Math.imul(_ ^ i >>> 17, 951274213), l = Math.imul(u ^ l >>> 19, 2716044179), [(_ ^ u ^ i ^ l) >>> 0, (u ^ _) >>> 0, (i ^ _) >>> 0, (l ^ _) >>> 0]
+        }
+
+        function sfc32($, _, u, i) {
+            return function () {
+                u >>>= 0, i >>>= 0;
+                var l = ($ >>>= 0) + (_ >>>= 0) | 0;
+                return $ = _ ^ _ >>> 9, _ = u + (u << 3) | 0, u = (u = u << 21 | u >>> 11) + (l = l + (i = i + 1 | 0) | 0) | 0, (l >>> 0) / 4294967296
+            }
+        }
+
+
+        let mathRand = sfc32(...cyrb128(seed));
+
+    </script>
+    <style>
+        body {
+            background-color: #FFFFFF;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            /*Can also be `fixed`*/
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            margin: auto;
+            border-radius: 5px;
+            box-shadow: -3px -2px rgba(0, 0, 0, 0.1), 5px 3px 3px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+
+</body>
+
+</html>

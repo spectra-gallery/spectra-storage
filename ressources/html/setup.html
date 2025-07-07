@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Setup YubiKey</title>
+</head>
+<body>
+  <h1>Register Your YubiKey</h1>
+  <p>Please insert or tap your YubiKey, then press "Register".</p>
+  <button id="btn-register">Register</button>
+  <script>
+    const btn = document.getElementById("btn-register");
+    btn.onclick = async function() {
+      try {
+        // Get options from server
+        const resp = await fetch("/auth/fido2/register/options");
+        const options = await resp.json();
+
+        // Convert certain fields from base64 to ArrayBuffer
+        options.challenge = _base64ToArrayBuffer(options.challenge);
+        if (options.user && options.user.id) {
+          // Might be an object with .data if using Buffer in JSON
+          const userId = options.user.id.data || options.user.id;
+          options.user.id = _stringToArrayBuffer(userId);
+        }
+        if (options.excludeCredentials) {
+          options.excludeCredentials = options.excludeCredentials.map((c) => {
+            c.id = _bufferDecode(c.id.data || c.id);
+            return c;
+          });
+        }
+
+        // WebAuthn create
+        const cred = await navigator.credentials.create({ publicKey: options });
+
+        // Prepare data for server
+        const rawId = _bufferEncode(cred.rawId);
+        const attObj = _bufferEncode(cred.response.attestationObject);
+        const clientDataJSON = _bufferEncode(cred.response.clientDataJSON);
+
+        // Send to server
+        const verify = await fetch("/auth/fido2/register/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rawId,
+            response: {
+              attestationObject: attObj,
+              clientDataJSON
+            },
+            type: cred.type
+          })
+        });
+        const verifyJson = await verify.json();
+        if (verifyJson.success) {
+          alert("Registration successful! You can now close this window.");
+          // Mark token used
+          await fetch("/auth/mark-token-used?token=${token}");
+        } else {
+          alert("Registration error: " + JSON.stringify(verifyJson));
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+        console.error(err);
+      }
+    };
+
+    function _base64ToArrayBuffer(base64) {
+      base64 = base64.replace(/-/g, "+").replace(/_/g, "/");
+      const str = atob(base64);
+      const bytes = new Uint8Array(str.length);
+      for (let i = 0; i < str.length; i++) {
+        bytes[i] = str.charCodeAt(i);
+      }
+      return bytes.buffer;
+    }
+    function _stringToArrayBuffer(str) {
+      const buf = new ArrayBuffer(str.length);
+      const bufView = new Uint8Array(buf);
+      for (let i = 0; i < str.length; i++) {
+        bufView[i] = str.charCodeAt(i);
+      }
+      return buf;
+    }
+    function _bufferEncode(value) {
+      return btoa(String.fromCharCode(...new Uint8Array(value)));
+    }
+    function _bufferDecode(value) {
+      return Uint8Array.from(atob(value), c => c.charCodeAt(0));
+    }
+  </script>
+</body>
+</html>
