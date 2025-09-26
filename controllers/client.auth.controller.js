@@ -1,7 +1,8 @@
 // authentication storage API
 
 const db = require("../models");
-const mail = require("../middlewares/mail");
+const crypto = require("crypto");
+// const mail = require("../middlewares/mail");
 require("dotenv").config();
 
 const axiosInstance = require("../services/axiosInstance");
@@ -15,7 +16,7 @@ const fetchClientPublicKeyFromServer = async () => {
     }
   try {
     const response = await axiosInstance.get("/client/auth/public-key");
-    if (!response.ok) {
+    if (response.status !== 200 || !response.data) {
       throw new Error("Failed to fetch client public key from Server");
     }
     cachedPublicKeyPem = response.data;
@@ -44,10 +45,20 @@ verifyClientSignature = async (req, res, next) => {
     verifier.update(data);
     verifier.end();
 
-    const isValid = verifier.verify(cachedPublicKeyPem, signature, "base64");
+    let isValid = verifier.verify(cachedPublicKeyPem, signature, "base64");
+    if (!isValid) {
+      // attempt one cache refresh in case of rotation
+      cachedPublicKeyPem = null;
+      const refreshed = await fetchClientPublicKeyFromServer();
+      if (refreshed) {
+        const v2 = crypto.createVerify("RSA-SHA256");
+        v2.update(data);
+        v2.end();
+        isValid = v2.verify(refreshed, signature, "base64");
+      }
+    }
+
     if (isValid) {
-      // authentication data from Storage API
-        
       next();
     } else {
       return res.json({ verified: false, message: "Signature is invalid." });

@@ -10,8 +10,14 @@ const dbConfig = require('../config/db.config');
 
 
 const SESSION_SECRET = appCypherConfig.SESSION_SECRET;
+const DB_USER = dbConfig.DB_USER;
+const DB_PASSWORD = dbConfig.DB_PASSWORD;
+const AUTH_SOURCE = dbConfig.AUTH_SOURCE;
+const DB_HOST = dbConfig.HOST;
+const DB_PORT = dbConfig.PORT;
+const DB = dbConfig.DB;
 
-const MONGO_URI = `mongodb://${dbConfig.HOST}:${dbConfig.PORT}/${dbConfig.DB}`;
+const MONGO_URI = `mongodb://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB}?authSource=${AUTH_SOURCE}`;
 
 module.exports = function (app) {
   app.use(

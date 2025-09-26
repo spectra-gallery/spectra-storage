@@ -6,12 +6,13 @@ const app = express();
 
 
 const appCypherConfig = require('./config/app.cypher.config');
+const { StorageConnectionMonitor } = require('./services/connectionMonitor');
 
 require('dotenv').config();
 
 const CLIENT_URL = appCypherConfig.CLIENT_URL;
 const BACKEND_API_URL = appCypherConfig.BACKEND_API_URL;
-const PORT = appCypherConfig.PORT || 6001;
+const PORT = appCypherConfig.PORT || 6601;
 
 global.__basedir = __dirname; 
 
@@ -39,8 +40,18 @@ app.get('/', (req, res) => {
 
 require('./routes/auth.routes')(app);
 require('./routes/storage.routes')(app);
+require('./routes/health.routes')(app);
 
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}.`);
 });
+
+// Start storage-side monitor
+try {
+  const monitor = new StorageConnectionMonitor({ intervalMs: 30000 });
+  monitor.start();
+  console.log('→ Storage connection monitor started');
+} catch (e) {
+  console.warn('Storage connection monitor failed to start:', e?.message || e);
+}

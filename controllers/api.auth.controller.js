@@ -14,6 +14,8 @@ const {
 } = require("../helpers/key.helpers");
 let cachedPublicKeyPem = null;
 let cachedPublicKeyPath = null;
+let backoffMs = 5000;
+const maxBackoffMs = 600000; // 10 minutes
 
 
 const storeApiPublicKey = async (token) => {
@@ -72,6 +74,11 @@ const getApiPublicKey = async (token) => {
   }
 };
 
+const clearApiPublicKeyCache = () => {
+  cachedPublicKeyPem = null;
+  cachedPublicKeyPath = null;
+};
+
 const verifyApiSignature = async (data, signature, token) => {
   try {
     const { publicKey } = await getApiPublicKey(token);
@@ -82,6 +89,10 @@ const verifyApiSignature = async (data, signature, token) => {
     verifier.update(data);
     const isValid = verifier.verify(publicKey, signature, "base64");
     console.log("[API.auth.controller] Is valid signature:", isValid);
+    if (!isValid) {
+      // invalidate cache in case of key rotation
+      clearApiPublicKeyCache();
+    }
     return {
       valid: isValid,
     };
@@ -100,7 +111,7 @@ const apiStatusOption = async (option) => {
   }
 };
 
-const validateApi = async (token) => {
+const validateApi = async (token, attempt = 1) => {
   try {
     const _status = await apiStatus();
 
@@ -125,8 +136,11 @@ const validateApi = async (token) => {
       }
     // }
 
-    await delay(20000); // 20 seconds
-    return await validateApi(token);
+    // backoff with cap
+    const wait = Math.min(backoffMs * Math.pow(2, attempt - 1), maxBackoffMs);
+    console.log(`[API.auth.controller] Validation failed, retry in ${wait}ms (attempt ${attempt})`);
+    await delay(wait);
+    return await validateApi(token, attempt + 1);
   } catch (err) {
     console.error(err);
     return null;
