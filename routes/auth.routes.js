@@ -17,22 +17,29 @@ const DB_HOST = dbConfig.HOST;
 const DB_PORT = dbConfig.PORT;
 const DB = dbConfig.DB;
 
-const MONGO_URI = `mongodb://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB}?authSource=${AUTH_SOURCE}`;
+const hasDbCreds = Boolean(DB_USER && DB_PASSWORD);
+const MONGO_URI = hasDbCreds
+  ? `mongodb://${DB_USER}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}:${DB_PORT}/${DB}?authSource=${AUTH_SOURCE}`
+  : `mongodb://${DB_HOST}:${DB_PORT}/${DB}`;
+const SKIP_DB = process.env.SKIP_DB === '1';
 
 module.exports = function (app) {
-  app.use(
-    session({
-      secret: SESSION_SECRET || "keyboard cat",
-      resave: false,
-      saveUninitialized: false,
-      store: MongoStore.create({ mongoUrl: MONGO_URI }),
-      cookie: {
-        httpOnly: true,
-        secure: false, // set to true if you run HTTPS in production
-        maxAge: 1000 * 60 * 60, // 1 hour
-      },
-    })
-  );
+  const sessOptions = {
+    secret: SESSION_SECRET || "keyboard cat",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false, // set to true if you run HTTPS in production
+      maxAge: 1000 * 60 * 60, // 1 hour
+    },
+  };
+  if (!SKIP_DB) {
+    sessOptions.store = MongoStore.create({ mongoUrl: MONGO_URI });
+  } else {
+    console.warn('⚠ Storage session: using MemoryStore (SKIP_DB=1)');
+  }
+  app.use(session(sessOptions));
 
   app.use(function (req, res, next) {
     res.header(

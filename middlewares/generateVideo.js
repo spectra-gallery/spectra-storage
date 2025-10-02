@@ -1,4 +1,5 @@
-const puppeteer = require("puppeteer");
+const { puppeteer, getLaunchOptions } = require("../helpers/puppeteer.helpers");
+const { puppeteerSemaphore } = require('../helpers/concurrency');
 const { record } = require("puppeteer-recorder");
 
 const fs = require("fs");
@@ -95,7 +96,8 @@ async function urlToMp4(
   slug,
   name
 ) {
-  const browser = await puppeteer.launch({ headless: "new" });
+  const release = await puppeteerSemaphore.acquire();
+  const browser = await puppeteer.launch(getLaunchOptions());
   const page = await browser.newPage();
 
   const delay_seconds = delayTime / 1000;
@@ -163,6 +165,7 @@ async function urlToMp4(
 
 
     await browser.close();
+    release();
 
     return savePathPublic;
   } catch (error) {

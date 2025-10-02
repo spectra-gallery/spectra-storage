@@ -4,7 +4,11 @@
   "description": "art gallery storage server",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "NODE_OPTIONS='--max-old-space-size=4096' node server.js",
+    "start:prod": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=4096' node server.js",
+    "capture": "node scripts/capture.js",
+    "ci:check": "node -e \"require('fs').accessSync('server.js'); console.log('storage ok')\"",
+    "ci:routes": "node scripts/ci/route-check.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -44,7 +48,7 @@
     "path": "^0.12.7",
     "puppeteer": "^20.1.1",
     "puppeteer-recorder": "^1.0.7",
-    "sharp": "^0.33.0",
+    "sharp": "^0.32.6",
     "util": "^0.12.5",
     "uuid": "^8.3.2"
   },

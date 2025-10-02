@@ -1,8 +1,10 @@
+require('dotenv').config();
+
 module.exports = {
-  HOST: '127.0.0.1', // localhost
-  PORT: 27017,
-  DB: 'spectra',
-  DB_USER: "spectra_arketype",
-  DB_PASSWORD: "5p3ktr4rk3ty7",
-  AUTH_SOURCE: "spectra",
+  HOST: process.env.DB_HOST || '127.0.0.1',
+  PORT: Number(process.env.DB_PORT || 27017),
+  DB: process.env.DB_NAME || 'spectra',
+  DB_USER: process.env.DB_USER || '',
+  DB_PASSWORD: process.env.DB_PASSWORD || '',
+  AUTH_SOURCE: process.env.DB_AUTH_SOURCE || process.env.DB_NAME || 'spectra',
 };

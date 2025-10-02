@@ -2,7 +2,7 @@ const appCypherConfig = require('../config/app.cypher.config');
 const { configStatus } = require('../controllers/application.controller');
 
 module.exports = function(app) {
-  app.get('/health', async (req, res) => {
+  const handler = async (req, res) => {
     try {
       const status = configStatus();
       res.json({
@@ -14,6 +14,7 @@ module.exports = function(app) {
     } catch (err) {
       res.status(500).json({ ok: false, error: err.message });
     }
-  });
+  };
+  app.get('/health', handler);
+  app.get('/api/health', handler);
 };
-

@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
-const puppeteer = require('puppeteer');
+const { puppeteer, getLaunchOptions } = require('../helpers/puppeteer.helpers');
+const { puppeteerSemaphore } = require('../helpers/concurrency');
 const fs = require('fs');
 require('dotenv').config();
 
@@ -137,7 +138,8 @@ generateImgEth = async (req, res) => {
  * A promise that resolves when the screenshot has been taken.
  */
 async function urlToPng(url, delayTime=5000, cssSelector='body', userId, slug) {
-  const browser = await puppeteer.launch({headless: 'new'});
+  const release = await puppeteerSemaphore.acquire();
+  const browser = await puppeteer.launch(getLaunchOptions());
   const page = await browser.newPage();
 
 
@@ -224,11 +226,13 @@ async function urlToPng(url, delayTime=5000, cssSelector='body', userId, slug) {
       }});
   }
   await browser.close();
+  release();
   return imageBuffer;
 }
 
 async function htmlToPng(htmlContent, delayTime=5000, cssSelector='body', userId, slug, hash) {
-  const browser = await puppeteer.launch({headless: 'new'});
+  const release = await puppeteerSemaphore.acquire();
+  const browser = await puppeteer.launch(getLaunchOptions());
   const page = await browser.newPage();
 
   await page.setViewport({
@@ -264,6 +268,7 @@ async function htmlToPng(htmlContent, delayTime=5000, cssSelector='body', userId
       }});
   }
   await browser.close();
+  release();
   return imageBuffer;
 }
 
