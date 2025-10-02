@@ -94,12 +94,39 @@ async function initKeyPair() {
   const encFile = files.find((f) => f.endsWith(".enc"));
 
   if (encFile) {
-    // Decrypt existing private key
+    // Decrypt existing private key (with auto-rotate fallback)
     const encPath = path.join(keysDir, encFile);
-    const encryptedBuf = await fs.readFile(encPath);
-    const pem = decryptPrivateKey(encryptedBuf, secret);
-    decryptedPrivateKey = pem;
-    console.log(`[initKeyPair] Loaded existing private key: ${encFile}`);
+    try {
+      const encryptedBuf = await fs.readFile(encPath);
+      const pem = decryptPrivateKey(encryptedBuf, secret);
+      decryptedPrivateKey = pem;
+      console.log(`[initKeyPair] Loaded existing private key: ${encFile}`);
+    } catch (e) {
+      const ts = new Date().toISOString().replace(/[:.]/g, '-');
+      const backupDir = path.join(keysDir, 'backup', ts);
+      await fs.ensureDir(backupDir);
+      try { await fs.move(encPath, path.join(backupDir, encFile), { overwrite: false }); } catch (_) {}
+      // Move matching public key if present
+      try {
+        const uuid = encFile.replace(/^privateKey-/, '').replace(/\.enc$/, '');
+        const pubName = `publicKey-${uuid}.pem`;
+        const pubPath = path.join(keysDir, pubName);
+        if (await fs.pathExists(pubPath)) {
+          await fs.move(pubPath, path.join(backupDir, pubName), { overwrite: false });
+        }
+      } catch (_) {}
+
+      console.warn(`[initKeyPair] Failed to decrypt existing key (${encFile}): ${e?.message || e}. Auto-rotating…`);
+      const { privateKey, publicKey } = generateRsaKeyPair();
+      const encrypted = encryptPrivateKey(privateKey, secret);
+      const keyId = uuidv4();
+      const encFilename = `privateKey-${keyId}.enc`;
+      const pubFilename = `publicKey-${keyId}.pem`;
+      await fs.writeFile(path.join(keysDir, encFilename), encrypted);
+      await fs.writeFile(path.join(keysDir, pubFilename), publicKey, "utf8");
+      decryptedPrivateKey = privateKey;
+      console.log(`[initKeyPair] Rotated key pair stored as ${encFilename} / ${pubFilename}`);
+    }
   } else {
     // Generate a new key pair
     console.log("[initKeyPair] Generating new RSA key pair...");

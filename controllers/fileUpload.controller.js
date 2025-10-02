@@ -36,6 +36,75 @@ const {
   PORTFOLIO_PATH
 } = pathConfig;
 
+// Read-only listing for Storage Explorer
+const path = require('path');
+const SAFE_BASES = { USER_STORAGE, SERIE_STORAGE, AUDIO_STORAGE, SPECTRE_STORAGE, INSCRIPTION_STORAGE, PRINT_PATH, PORTFOLIO_PATH };
+
+const listStorage = async (req, res) => {
+  try {
+    const baseKey = (req.query.base || '').toUpperCase();
+    const sub = (req.query.sub || '').replace(/\.\.|^\//g, '');
+    const baseVal = SAFE_BASES[baseKey];
+    if (!baseVal) return res.status(400).json({ ok: false, error: 'Invalid base' });
+    const root = path.join(pathConfig.ABSOLUTE_PUBLIC_PATH, baseVal, sub);
+    if (!fs.existsSync(root)) return res.json({ ok: true, root, items: [] });
+    const dirents = fs.readdirSync(root, { withFileTypes: true });
+    const items = dirents.map(d => {
+      const fp = path.join(root, d.name);
+      let st = null; try { st = fs.statSync(fp) } catch (_) {}
+      return {
+        name: d.name,
+        type: d.isDirectory() ? 'dir' : 'file',
+        size: st ? st.size : 0,
+        mtime: st ? st.mtime : null,
+        url: pathHelpers.buildDirectory(baseVal, path.posix.join(sub || '', d.name))
+      }
+    });
+    res.json({ ok: true, root, items });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+};
+
+// Summarize storage bases (size and item counts)
+const storageHealthSummary = async (req, res) => {
+  try {
+    const bases = Object.entries(SAFE_BASES);
+    const MAX_ENTRIES = 5000;
+    const path = require('path');
+
+    function safeWalk(root, limit) {
+      let total = 0; let files = 0; let dirs = 0; let seen = 0;
+      const stack = [root];
+      while (stack.length && seen < limit) {
+        const cur = stack.pop(); seen++;
+        let dirents = [];
+        try { dirents = fs.readdirSync(cur, { withFileTypes: true }); } catch (_) { continue }
+        for (const d of dirents) {
+          const fp = path.join(cur, d.name);
+          try {
+            const st = fs.statSync(fp);
+            if (d.isDirectory()) { dirs++; if (seen < limit) stack.push(fp); }
+            else { files++; total += st.size; }
+          } catch (_) {}
+        }
+      }
+      return { totalBytes: total, files, dirs, capped: seen >= limit };
+    }
+
+    const summary = [];
+    for (const [key, base] of bases) {
+      const root = path.join(pathConfig.ABSOLUTE_PUBLIC_PATH, base);
+      const exists = fs.existsSync(root);
+      const stats = exists ? safeWalk(root, MAX_ENTRIES) : { totalBytes: 0, files: 0, dirs: 0, capped: false };
+      summary.push({ base: key, path: base, ...stats });
+    }
+    res.json({ ok: true, summary });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+};
+
 const uploadMatterImg = async (req, res) => {
   buildPublicDirectory(USER_STORAGE, req.userId);
   const directoryPath = buildDirectory(USER_STORAGE, req.userId);
@@ -47,7 +116,7 @@ const uploadMatterImg = async (req, res) => {
       return res.status(400).send({ message: "upload a file" });
     }
 
-
+    const fileName = req.file.filename;
     let filePath = directoryPath + fileName;
 
     const fileSizeInBytes = req.file.size;
@@ -579,4 +648,6 @@ module.exports = {
   multipleUpload,
   spectreUpload,
   uploadOnChain,
+  listStorage,
+  storageHealthSummary,
 };

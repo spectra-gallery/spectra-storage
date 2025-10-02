@@ -6,7 +6,7 @@ const axiosInstance = require("../services/axiosInstance");
 
 const config = require("../config/auth.config");
 const appCypherConfig = require("../config/app.cypher.config");
-const SESSION_SECRET = appCypherConfig.SESSION_SECRET;
+const STORAGE_SESSION_SECRET = appCypherConfig.STORAGE_SESSION_SECRET;
 let apiToken = null;
 
 const apiStatus = async () => {
@@ -71,7 +71,7 @@ const _verifySignature = async (data, signature) => {
 const sendEncyptedData = async (slug, signature, data) => {
     // sign the data with the private key
     try {
-      const token = jwt.sign({ slug, signature }, SESSION_SECRET, {
+      const token = jwt.sign({ slug, signature }, STORAGE_SESSION_SECRET, {
         expiresIn: "1h",
       });
   

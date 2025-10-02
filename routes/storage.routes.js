@@ -47,4 +47,10 @@ module.exports = function(app) {
 
   // uploadCollectionHtml
   app.post('/storage/serie/uploadhtml', [authJwt.verifyToken], uploadController.collectionHtmlUpload);
+
+  // list files/directories (read-only)
+  app.get('/storage/list', [authJwt.verifyToken], uploadController.listStorage);
+
+  // storage health summary (read-only)
+  app.get('/storage/health/summary', [authJwt.verifyToken], uploadController.storageHealthSummary);
 };

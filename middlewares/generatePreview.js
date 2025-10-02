@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
-const puppeteer = require('puppeteer');
+const { puppeteer, getLaunchOptions } = require('../helpers/puppeteer.helpers');
 const fs = require('fs');
+const { puppeteerSemaphore } = require('../helpers/concurrency');
 require('dotenv').config();
 
 const {buildPublicDirectory, buildDirectory } = require('../helpers/path.helpers');
@@ -26,7 +27,8 @@ generatePreview = async (req, res) => {
  * @return {Promise<Buffer>} A promise that resolves with the PNG image.
  */
     async function htmlToPng(_url, _cssSelector) {
-      const browser = await puppeteer.launch({headless: 'new'});
+      const release = await puppeteerSemaphore.acquire();
+      const browser = await puppeteer.launch(getLaunchOptions());
       const page = await browser.newPage();
 
       // proxy requests to ordinals endpoints
@@ -100,6 +102,7 @@ generatePreview = async (req, res) => {
           }});
       }
       await browser.close();
+      release();
       return imageBuffer;
     }
 
@@ -195,7 +198,8 @@ generateETHPreview = async (req, res) => {
 };
 
 async function htmlToPng(htmlContent, delayTime=5000, cssSelector='body', userId, slug, hash) {
-  const browser = await puppeteer.launch({headless: 'new'});
+  const release = await puppeteerSemaphore.acquire();
+  const browser = await puppeteer.launch(getLaunchOptions());
   const page = await browser.newPage();
 
   await page.setViewport({
@@ -231,6 +235,7 @@ async function htmlToPng(htmlContent, delayTime=5000, cssSelector='body', userId
       }});
   }
   await browser.close();
+  release();
   return imageBuffer;
 }
 

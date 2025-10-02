@@ -28,9 +28,10 @@ function buildPublicDirectory(baseStorage, subFolder = "") {
 }
 
 function buildDirectory(baseStorage, subFolder = "") {
-  const dirPath = path.join(baseStorage, subFolder);
-  ensureDirectoryExists(dirPath);
-  return dirPath + "/";
+  // This function returns a public (URL) path used by clients.
+  // Do NOT mkdir here; only buildPublicDirectory should touch the filesystem.
+  const urlPath = path.posix.join(baseStorage, subFolder || "");
+  return urlPath.endsWith("/") ? urlPath : urlPath + "/";
 }
 
 module.exports = {
