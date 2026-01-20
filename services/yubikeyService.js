@@ -239,6 +239,63 @@ const fido2 = new Fido2Lib({
   authenticatorUserVerification: "preferred",
 });
 
+function resolveExpectedOrigin(val) {
+  const fallback = "http://localhost:3201";
+  try {
+    if (!val) return fallback;
+    let primary = null;
+    // Try JSON formats first (array or object)
+    if (typeof val === "object" && val !== null) {
+      if (Array.isArray(val)) primary = val[0];
+      else {
+        const vals = Object.values(val);
+        if (vals.length) primary = vals[0];
+      }
+    } else if (typeof val === "string") {
+      const trimmed = val.trim();
+      if ((trimmed.startsWith("[") && trimmed.endsWith("]")) ||
+          (trimmed.startsWith("{") && trimmed.endsWith("}"))) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) primary = parsed[0];
+          else if (parsed && typeof parsed === "object") {
+            const vals = Object.values(parsed);
+            if (vals.length) primary = vals[0];
+          }
+        } catch (_) {
+          // fall through to CSV split
+        }
+      }
+      if (!primary) {
+        primary = String(trimmed.split(',')[0]).trim();
+      }
+    }
+    if (!primary) primary = fallback;
+    try {
+      // normalize to origin only
+      primary = new URL(String(primary)).origin;
+    } catch (_) {}
+    return String(primary);
+  } catch (_) {
+    return fallback;
+  }
+}
+
+// Parse a list of allowed origins from CSV/JSON/array formats
+function parseAllowed(val) {
+  try {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.filter(Boolean);
+    const s = String(val).trim();
+    if ((s.startsWith("[") && s.endsWith("]")) || (s.startsWith("{") && s.endsWith("}"))) {
+      const p = JSON.parse(s);
+      if (Array.isArray(p)) return p.filter(Boolean);
+      if (p && typeof p === 'object') return Object.values(p).filter(Boolean);
+    }
+    return s.split(',').map(x => x.trim()).filter(Boolean);
+  } catch (_) { return [String(val)]; }
+}
+
 /**
  * Registration Step 1: Return Attestation Options
  */
@@ -287,9 +344,33 @@ async function verifyRegistration(attestationResponse) {
 
 
   const expectedChallenge = globalCurrentChallenge;
+  // Support multiple allowed origins; prefer the browser's actual origin if allowed
+  const allowListRaw = process.env.WEBAUTHN_ORIGINS || appCypherConfig.WEBAUTHN_ORIGIN || "http://localhost:3201";
+  function parseAllowed(val) {
+    try {
+      if (!val) return [];
+      if (Array.isArray(val)) return val.filter(Boolean);
+      const s = String(val).trim();
+      if ((s.startsWith("[") && s.endsWith("]")) || (s.startsWith("{") && s.endsWith("}"))) {
+        const p = JSON.parse(s);
+        if (Array.isArray(p)) return p.filter(Boolean);
+        if (p && typeof p === 'object') return Object.values(p).filter(Boolean);
+      }
+      return s.split(',').map(x => x.trim()).filter(Boolean);
+    } catch (_) { return [String(val)]; }
+  }
+  const allowedOrigins = parseAllowed(allowListRaw);
+  let expectedOrigin = resolveExpectedOrigin(allowListRaw);
+  try {
+    const cdata = JSON.parse(Buffer.from(attestationResponse?.response?.clientDataJSON || '', 'base64').toString('utf8'));
+    const actual = cdata && cdata.origin;
+    if (actual && (allowedOrigins.length === 0 || allowedOrigins.includes(actual))) {
+      expectedOrigin = actual;
+    }
+  } catch (_) { /* ignore and use resolved origin */ }
   const result = await fido2.attestationResult(attestationResponse, {
     challenge: expectedChallenge,
-    origin: appCypherConfig.WEBAUTHN_ORIGIN || "http://localhost:3000",
+    origin: expectedOrigin,
     factor: "either",
     rpId: appCypherConfig.RP_ID || "localhost",
   });
@@ -356,9 +437,20 @@ async function verifyAuthentication(assertionResponse) {
     throw new Error("Credential ID mismatch.");
   }
 
+  // Same multi-origin support for authentication
+  const allowListRaw2 = process.env.WEBAUTHN_ORIGINS || appCypherConfig.WEBAUTHN_ORIGIN || "http://localhost:3201";
+  const allowed2 = parseAllowed(allowListRaw2);
+  let expectedOrigin2 = resolveExpectedOrigin(allowListRaw2);
+  try {
+    const cdata2 = JSON.parse(Buffer.from(assertionResponse?.response?.clientDataJSON || '', 'base64').toString('utf8'));
+    const actual2 = cdata2 && cdata2.origin;
+    if (actual2 && (allowed2.length === 0 || allowed2.includes(actual2))) {
+      expectedOrigin2 = actual2;
+    }
+  } catch (_) {}
   const result = await fido2.assertionResult(assertionResponse, {
     challenge: expectedChallenge,
-    origin: appCypherConfig.WEBAUTHN_ORIGIN || "http://localhost:3000",
+    origin: expectedOrigin2,
     factor: "either",
     publicKey: globalCredential.publicKey,
     prevCounter: globalCredential.counter,

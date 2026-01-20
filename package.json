@@ -4,8 +4,8 @@
   "description": "art gallery storage server",
   "main": "server.js",
   "scripts": {
-    "start": "NODE_OPTIONS='--max-old-space-size=4096' node server.js",
-    "start:prod": "NODE_ENV=production NODE_OPTIONS='--max-old-space-size=4096' node server.js",
+    "start": "APP_ENV=development NODE_ENV=development NODE_OPTIONS='--max-old-space-size=4096' node server.js",
+    "start:prod": "APP_ENV=production NODE_ENV=production NODE_OPTIONS='--max-old-space-size=4096' node server.js",
     "capture": "node scripts/capture.js",
     "ci:check": "node -e \"require('fs').accessSync('server.js'); console.log('storage ok')\"",
     "ci:routes": "node scripts/ci/route-check.js",

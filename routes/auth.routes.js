@@ -24,13 +24,20 @@ const MONGO_URI = hasDbCreds
 const SKIP_DB = process.env.SKIP_DB === '1';
 
 module.exports = function (app) {
+  try {
+    console.log(`[storage:mongo] host=${DB_HOST} port=${DB_PORT} db=${DB} user=${DB_USER} authSource=${AUTH_SOURCE}`);
+    console.log(`[storage:mongo] uri=${MONGO_URI.replace(/:(?:[^:@/]+)@/,'://<redacted>@')}`);
+  } catch (_) {}
+  const cookieSecure = (process.env.COOKIE_SECURE === '1') || (process.env.NODE_ENV === 'production');
+  const sameSite = cookieSecure ? 'none' : 'lax';
   const sessOptions = {
     secret: SESSION_SECRET || "keyboard cat",
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // set to true if you run HTTPS in production
+      secure: cookieSecure,
+      sameSite,
       maxAge: 1000 * 60 * 60, // 1 hour
     },
   };
@@ -42,12 +49,8 @@ module.exports = function (app) {
   app.use(session(sessOptions));
 
   app.use(function (req, res, next) {
-    res.header(
-      "Access-Control-Allow-Headers",
-      "x-access-token, Origin, Content-Type, Accept",
-      "5p3-config-token, Origin, Content-Type, Accept",
-      "spectra-api-session-token, Origin, Content-Type, Accept",
-    );
+    res.header("Access-Control-Allow-Headers",
+      "Origin, X-Requested-With, Content-Type, Accept, x-access-token, 5p3-config-token, spectra-api-session-token");
     next();
   });
 
