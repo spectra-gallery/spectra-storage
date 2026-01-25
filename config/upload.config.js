@@ -1,6 +1,6 @@
 module.exports = {
     STORAGE_FOLDER: '/storage/',
-    UPLOAD_MAX_SIZE: 999999999, // 1GB
+    UPLOAD_MAX_SIZE: 999999999, // 1GB - Supports large image files for mixmedia uploads - Supports large image files for mixmedia uploads - Supports large image files for mixmedia uploads
     // API MAX SIZE 50MB
     UPLOAD_API_MAX_SIZE: 52428800, // 50MB
     UPLOAD_AUDIO_MAX_SIZE: 31457280, // 30MB
