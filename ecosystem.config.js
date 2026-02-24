@@ -3,7 +3,8 @@ module.exports = {
     name: 'spectra-storage',
     exec_mode: 'cluster',
     instances: 0,
-    script: './server.js',
+    script: 'npm',
+    args: 'run start:prod',
     watch: false,
     env: {
       NODE_ENV: 'production',

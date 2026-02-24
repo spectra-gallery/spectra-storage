@@ -1,5 +1,5 @@
 module.exports = {
-  secret: '5SP3CTRA-5T0RAG3-6987423681',
+  secret: 'S73KTR4-5T0RAG3-23C6C75339',
   jwtExpiration: 604800, // 7 days
   jwtRefreshExpiration: 604800, // 7 days
 };

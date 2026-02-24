@@ -10,8 +10,10 @@ class StorageConnectionMonitor {
     this.timer = null;
     this.running = false;
     this.adminEmail = appCypherConfig.ADMIN_EMAIL;
-    this.backendUrl = (appCypherConfig.BACKEND_API_URL || "http://localhost:8000").replace(/\/$/, "");
-    this.frontendUrl = (appCypherConfig.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
+    this.backendUrl = (
+      appCypherConfig.BACKEND_PUBLIC_URL || appCypherConfig.BACKEND_API_URL || "http://localhost:8000"
+    ).replace(/\/$/, "");
+    this.frontendUrl = (appCypherConfig.CLIENT_URL || "http://localhost:3201").replace(/\/$/, "");
     this.lastIncidentByKind = new Map();
   }
 
@@ -98,4 +100,3 @@ class StorageConnectionMonitor {
 }
 
 module.exports = { StorageConnectionMonitor };
-
