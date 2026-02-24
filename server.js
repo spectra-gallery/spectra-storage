@@ -51,7 +51,9 @@ const corsOptions = {
     'Content-Type',
     'x-access-token',
     '5p3-config-token',
-    'spectra-api-session-token'
+    'spectra-api-session-token',
+    'spectra-client-session-token',
+    'session-token'
   ],
   optionsSuccessStatus: 204
 };
